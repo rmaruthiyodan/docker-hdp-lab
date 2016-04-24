@@ -18,4 +18,4 @@ e.g. sh setup_kerberos.sh
 
 Note - Please run setup_kerberos.sh from KDC_HOST only, you don't need to setup or configure KDC, this script will do everything for you.
 
-For more information, please refer our website http://crazyadmins.com
+For more information, please refer to this community article - https://community.hortonworks.com/content/kbentry/29203/automated-kerberos-installation-and-configuration.html
