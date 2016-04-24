@@ -2,9 +2,9 @@ Steps to setup Kerberos authentication using a shell script.
 
 1. Clone repository to your local/one of the node in the cluster
 
-git clone https://github.com/crazyadmins/useful-scripts.git
+git clone https://github.com/rmaruthiyodan/docker-hdp-lab.git
 
-2. cd to useful-scripts/ambari/
+2. cd to docker-hdp-lab/Kerberos_setup/
 
 3. Copy setup_kerberos.sh and kerberos.props to the host which you want to setup as KDC Server
 
