@@ -1,2 +1,35 @@
 #!/bin/bash
-docker -H altair:4000 kill $(docker -H altair:4000 ps | grep $1 | awk -F "/" '{print $NF}')
+########
+#Author: Ratish Maruthiyodan
+#Project: Docker HDP Lab
+########
+
+if [ $# -ne 1 ] ;then
+ echo "Incorrect Arguments"
+ echo "Usage:: stop_cluster.sh <username-clustername>"
+ exit 1
+fi
+
+if [ ! "$(docker -H altair:4000 ps | grep $1 | awk -F "/" '{print $NF}')" ]
+then
+  echo -e "\nThere is no Running Instnace that matches the given string..."
+  exit 0 
+fi
+
+# echo -e " \n\t ****** WARNING !!! ****** \n "
+echo -e "\nThe following instances will be stopped :"
+for i in $(docker -H altair:4000 ps | grep $1 | awk -F "/" '{print $NF}')
+do
+	echo -e "\t" $i
+done
+echo -e "\n\t"
+
+read -p "Are you sure to stop ? [Y/N] : " choice
+echo "---------------------------------------------------"
+if [ "$choice" == "Y" ] || [ "$choice" == "y" ]
+then
+	docker -H altair:4000 kill $(docker -H altair:4000 ps | grep $1 | awk -F "/" '{print $NF}')
+else
+	exit 1
+fi
+

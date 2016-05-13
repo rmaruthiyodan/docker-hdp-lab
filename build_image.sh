@@ -1,4 +1,8 @@
 #!/bin/bash
+########
+#Author: Ratish Maruthiyodan
+#Project: Docker HDP Lab
+########
 
 __check_n_build_dir() {
 	if [ ! -d /opt/docker_cluster/ambari-server-$AMBARI_VERSION ];then

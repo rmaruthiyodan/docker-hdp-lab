@@ -1,5 +1,8 @@
 #!/bin/bash
-set +x
+########
+#Author: Ratish Maruthiyodan
+#Project: Docker HDP Lab
+########
 
 start_instance(){
 	docker -H $SWARM_MANAGER:4000 start $INSTANCE_NAME
@@ -14,7 +17,7 @@ populate_hostsfile(){
 }
 
 if [ $# -ne 1 ];then
- echo "Usage start_cluster.sh <USERNAME>-<CLUSTERNAME>"
+ echo "Usage:: start_cluster <USERNAME>-<CLUSTERNAME>"
  exit
 fi
 

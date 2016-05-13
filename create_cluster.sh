@@ -1,4 +1,8 @@
 #!/bin/bash
+########
+#Author: Ratish Maruthiyodan
+#Project: Docker HDP Lab
+########
 
 __create_instance() {
 
@@ -6,8 +10,20 @@ docker -H $SWARM_MANAGER:4000 run -d --hostname $NODENAME --name $INSTANCE_NAME 
 
 }
 
+__validate_ambariserver_hostname()
+{
+	IP=$(getent hosts $CLUSTERNAME-ambari-server.$DOMAIN_NAME)
+        if [  $? -eq 0 ]; then
+                echo -e "\t $(tput setaf 1) An instance already exists in this cluster, with the name: '" $CLUSTERNAME-ambari-server.$DOMAIN_NAME "' Please use unique hostnames...$(tput sgr 0)"
+                exit
+        fi
+
+}
+
+
 __validate_hostnames() {
 # Function Checks for duplicate hostnames and check if they are valid
+
 for (( i=1; i<=$NUM_OF_NODES; i++ ))
 do
         eval "NODENAME=\${HOST${i}}"
@@ -28,7 +44,17 @@ done
 
 }
 
+__validate_clustername() {
+	echo $CLUSTERNAME | egrep -q '[^0-9a-zA-Z]'
+	if [ $? -eq 0 ]; then
+	  echo -e "\t$(tput setaf 1)Invalid Clustername: " $CLUSTERNAME "$(tput sgr 0)"
+	  echo -e "\tCannot have cluster names with charaters other than [a-z], [A-Z] and [0-9]\n"
+	  exit
+	fi
+}
 
+
+#set -x
 if [ $# -ne 1 ] || [ ! -f $1 ];then
  echo "Insuffient or Incorrect Arguments"
  echo "Usage:: create_cluster.sh <cluster.properties filename>"
@@ -36,7 +62,7 @@ if [ $# -ne 1 ] || [ ! -f $1 ];then
 fi
 
 CLUSTER_PROPERTIES=$1
-source $CLUSTER_PROPERTIES
+source $CLUSTER_PROPERTIES > /dev/null 2>&1
 
 if [ ! $USERNAME ] || [ ! $CLUSTERNAME ] || [ ! $CLUSTER_VERSION ] || [ ! $AMBARIVERSION ] || [ ! $NUM_OF_NODES ] || [ ! $DOMAIN_NAME ]; then
  echo "Incorrect Cluster properties file"
@@ -45,6 +71,8 @@ fi
 
 # Validate the hostnames and find duplicates
 __validate_hostnames
+__validate_clustername
+__validate_ambariserver_hostname
 
 SWARM_MANAGER=altair
 INSTANCE_NAME=$USERNAME-$CLUSTERNAME-ambari-server
@@ -72,7 +100,7 @@ do
 	IPADDR=$(docker -H $SWARM_MANAGER:4000 inspect $INSTANCE_NAME  |  grep -i "ipaddress" | grep 10 |xargs |awk -F ' |,' '{print $2}')
 	echo $IPADDR   $NODENAME >> $USERNAME-$CLUSTERNAME-tmphostfile
 done
-sleep 5
+#sleep 5
 for ip in $(awk '{print $1}' $USERNAME-$CLUSTERNAME-tmphostfile)
 do
 	while ! cat $USERNAME-$CLUSTERNAME-tmphostfile | ssh root@$ip "cat >> /etc/hosts"
@@ -85,6 +113,21 @@ done
 rm -f $USERNAME-$CLUSTERNAME-tmphostfile
 AMBARI_SERVER_IP=$(docker -H $SWARM_MANAGER:4000 inspect $USERNAME-$CLUSTERNAME-ambari-server  |  grep -i "ipaddress" | grep 10 |xargs |awk -F ' |,' '{print $2}')
 echo "Ambari Server IP" $AMBARI_SERVER_IP
-echo "Sleeping for 15 seconds while waiting for initialization..."
-sleep 15
+
+loop=0
+nc $AMBARI_SERVER_IP 8080 < /dev/null
+while [ $? -eq 1 ]
+do
+	echo "Sleeping for 10 seconds while waiting for initialization..."
+	sleep 10
+	loop=$(( $loop + 1 ))
+	if [ $loop -eq 4 ]
+	then
+		echo "There is some error with the cluster connection. Stopping the newly created cluster..."
+		delete_cluster $USERNAME-$CLUSTERNAME	
+		exit
+	fi
+
+	nc $AMBARI_SERVER_IP 8080 < /dev/null
+done
 generate_json.sh $CLUSTER_PROPERTIES $AMBARI_SERVER_IP
