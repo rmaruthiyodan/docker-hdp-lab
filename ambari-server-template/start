@@ -1,0 +1,11 @@
+#!/bin/bash
+cat /root/.ssh/id_rsa.pub > /root/.ssh/authorized_keys
+FQDN=$(hostname -f)
+echo "NETWORKING=yes" > /etc/sysconfig/network
+echo HOSTNAME=$FQDN >> /etc/sysconfig/network
+echo 200 overlay >> /etc/iproute2/rt_tables
+ip rule add from $(hostname -i | cut -f1 -d " ") table overlay
+ip route add default via $(getent hosts overlay-gatewaynode | cut -f1 -d " ") dev eth0 table overlay
+service sshd restart
+service ambari-server restart
+/usr/sbin/sshd -d -p 2222
