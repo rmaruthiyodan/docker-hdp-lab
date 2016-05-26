@@ -1,12 +1,14 @@
-#!/bin/bash
+#!/bin/bash 
 ########
-#Author: Ratish Maruthiyodan
-#Project: Docker HDP Lab
+# Author: Ratish Maruthiyodan
+# Project: Docker HDP Lab
+# Description: The first script in this proejct. Creates a new cluster using the given properties 
 ########
+
 
 __create_instance() {
 
-docker -H $SWARM_MANAGER:4000 run -d --hostname $NODENAME --name $INSTANCE_NAME  --net hwxblr.com --net-alias=$NODENAME --env AMBARI_SERVER=$CLUSTERNAME-ambari-server.$DOMAIN_NAME --privileged $IMAGE
+docker -H $SWARM_MANAGER:4000 run -d --hostname $NODENAME --name $INSTANCE_NAME  --net $DEFAULT_DOMAIN_NAME --net-alias=$NODENAME --env AMBARI_SERVER=$CLUSTERNAME-ambari-server.$DOMAIN_NAME --privileged $IMAGE
 
 }
 
@@ -65,16 +67,22 @@ CLUSTER_PROPERTIES=$1
 source $CLUSTER_PROPERTIES > /dev/null 2>&1
 
 if [ ! $USERNAME ] || [ ! $CLUSTERNAME ] || [ ! $CLUSTER_VERSION ] || [ ! $AMBARIVERSION ] || [ ! $NUM_OF_NODES ] || [ ! $DOMAIN_NAME ]; then
- echo "Incorrect Cluster properties file"
+ echo -e "\tIncorrect Cluster properties file"
  exit
 fi
 
+if [ $NUM_OF_NODES -ne `grep "HOST[0-9]=" $CLUSTER_PROPERTIES| wc -l` ]
+then
+  echo -e "\tNUM_OF_NODES in the cluster properties file does not match the defined hosts"
+  exit
+fi
+
+source /etc/docker-hdp-lab.conf
 # Validate the hostnames and find duplicates
 __validate_hostnames
 __validate_clustername
 __validate_ambariserver_hostname
 
-SWARM_MANAGER=altair
 INSTANCE_NAME=$USERNAME-$CLUSTERNAME-ambari-server
 NODENAME=$CLUSTERNAME-ambari-server.$DOMAIN_NAME
 IMAGE=hdp/ambari-server-$AMBARIVERSION
@@ -130,4 +138,5 @@ do
 
 	nc $AMBARI_SERVER_IP 8080 < /dev/null
 done
+sleep 10
 generate_json.sh $CLUSTER_PROPERTIES $AMBARI_SERVER_IP

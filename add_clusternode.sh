@@ -1,12 +1,13 @@
 #!/bin/bash
 ########
-#Author: Ratish Maruthiyodan
-#Project: Docker HDP Lab
+# Author: Ratish Maruthiyodan
+# Project: Docker HDP Lab
+# Description: The script adds a new node to an existing cluster
 ########
 
 __create_instance() {
 
-docker -H $SWARM_MANAGER:4000 run -d --hostname $NODENAME --name $INSTANCE_NAME  --net hwxblr.com --net-alias=$NODENAME --env AMBARI_SERVER=$CLUSTERNAME-ambari-server.$DOMAIN_NAME --privileged $IMAGE
+docker -H $SWARM_MANAGER:4000 run -d --hostname $NODENAME --name $INSTANCE_NAME  --net $DEFAULT_DOMAIN_NAME  --net-alias=$NODENAME --env AMBARI_SERVER=$CLUSTERNAME-ambari-server.$DOMAIN_NAME --privileged $IMAGE
 
 }
 
@@ -71,6 +72,7 @@ fi
 source $CLUSTER_PROPERTIES > /dev/null 2>&1
 
 # Validate the hostnames and find duplicates
+source /etc/docker-hdp-lab.conf
 
 USERNAME_CLUSTER=$1
 USERNAME=`echo $USERNAME_CLUSTER|cut -f1 -d"-"`
@@ -79,7 +81,6 @@ CLUSTERNAME=`echo $USERNAME_CLUSTER|cut -f2 -d"-"`
 NODENAME=$2
 DOMAIN_NAME=`echo $NODENAME | cut -f1 -d"." --complement`
 
-SWARM_MANAGER=altair
 
 __validate_hostname
 __validate_clustername
@@ -99,3 +100,4 @@ LIST_OF_COMPONENTS="HDFS_CLIENT MAPREDUCE2_CLIENT YARN_CLIENT ZOOKEEPER_CLIENT"
 AMBARI_SERVER_IP=`docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $USERNAME-$CLUSTERNAME-ambari-server`
 __add_host_and_install_components
 
+exit

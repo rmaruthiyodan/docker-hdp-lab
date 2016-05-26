@@ -1,10 +1,10 @@
 USERNAME=ratish
-CLUSTERNAME=test1
-AMBARIVERSION=2.2.1.1
+CLUSTERNAME=amb220hdp242
+AMBARIVERSION=2.2.2.0
 NUM_OF_NODES=3
 DOMAIN_NAME=hwxblr.com
 DEFAULT_PASSWORD=hadoop
-CLUSTER_VERSION=2.4.0.0
+CLUSTER_VERSION=2.4.2.0
 HOST1=n1
 HOST2=n2
 HOST3=n3
@@ -13,13 +13,17 @@ HOST2_SERVICES="SECONDARY_NAMENODE,NODEMANAGER,DATANODE,ZOOKEEPER_CLIENT,ZOOKEEP
 HOST3_SERVICES="RESOURCEMANAGER,APP_TIMELINE_SERVER,HISTORYSERVER,NODEMANAGER,DATANODE,ZOOKEEPER_CLIENT,ZOOKEEPER_SERVER,HDFS_CLIENT,YARN_CLIENT,MAPREDUCE2_CLIENT"
 
 ## Available HDP versions ##
-Ambari_versions="1.7.0 , 2.0.0 , 2.0.1 , 2.0.2 , 2.1.0 , 2.1.1.0 , 2.1.2.0 , 2.1.2.1 , 2.2.1.0, 2.2.1.1 "
+Ambari_versions="1.7.0 , 2.0.0 , 2.0.1 , 2.0.2 , 2.1.0 , 2.1.1.0 , 2.1.2.0 , 2.1.2.1 , 2.2.1.0, 2.2.1.1 , 2.2.2.0"
 HDP_2.2.0.0_BASE_URL="http://10.200.8.196/repos/HDP/centos6/2.x/GA/2.2.0.0/"
-HDP_2.2.4.0_BASE_URL="http://10.200.8.196/repos/HDP/centos6/2.x/updates/2.2.4.2/"
+HDP_2.2.4.2_BASE_URL="http://10.200.8.196/repos/HDP/centos6/2.x/updates/2.2.4.2/"
 HDP_2.2.6.0_BASE_URL="http://10.200.8.196/repos/HDP/centos6/2.x/updates/2.2.6.0/"
 HDP_2.2.8.0_BASE_URL="http://10.200.8.196/repos/HDP/centos6/2.x/updates/2.2.8.0/"
+HDP_2.2.9.0_BASE_URL="http://10.200.8.196/repos/HDP/centos6/2.x/updates/2.2.9.0/"
 HDP_2.3.0_BASE_URL="http://10.200.8.196/repos/HDP/centos6/2.x/updates/2.3.0.0"
 HDP_2.3.2_BASE_URL="http://10.200.8.196/repos/HDP/centos6/2.x/updates/2.3.2.0"
 HDP_2.3.4_BASE_URL="http://10.200.8.196/repos/HDP/centos6/2.x/updates/2.3.4.0"
 HDP_2.4_BASE_URL="http://10.200.8.196/repos/HDP/centos6/2.x/updates/2.4.0.0/"
+HDP_2.4.2.0_BASE_URL="http://10.200.8.196/repos/HDP/centos6/2.x/updates/2.4.2.0/"
+HDP_2.1.1.0_BASE_URL="http://10.200.8.196/repos/HDP/centos6/2.x/GA/2.1.1.0/"
+HDP_2.1.10.0_BASE_URL="http://10.200.8.196/repos/HDP/centos6/2.x/updates/2.1.10.0/"
 HDP_UTILS_URL="http://10.200.8.196/repos/HDP-UTILS-1.1.0.20/repos/centos6/"

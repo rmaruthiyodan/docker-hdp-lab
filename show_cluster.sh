@@ -1,8 +1,13 @@
 #!/bin/bash
+########
+# Author: Ratish Maruthiyodan
+# Project: Docker HDP Lab
+# Description: Used for displaying Cluster Nodes and their IPs
+########
 
 __print_cluster_info() {
 	echo $USERNAME
-	for cluster_name in $($DOCKER_PS_CMD| grep "\/$USERNAME-" | awk -F "/" '{print $NF}' | cut -f 2 -d"-" | sort | uniq)
+	for cluster_name in $($DOCKER_PS_CMD| grep "\/$USERNAME\-" | awk -F "/" '{print $NF}' | cut -f 2 -d"-" | sort | uniq)
 	do
 		echo -e "\n\t" "$(tput setaf 1)[ $cluster_name ]$(tput sgr 0)"
 		for node_name in $($DOCKER_PS_CMD | grep "$USERNAME-" | grep "\-$cluster_name-" | awk -F "/" '{print $NF}' | cut -f 3-8 -d"-")
@@ -32,7 +37,7 @@ else
  USERNAME=$1
 fi
 
-SWARM_MANAGER="altair"
+source /etc/docker-hdp-lab.conf
 
 if [ "$2" == "online" ]
 then
@@ -56,6 +61,5 @@ if [ "$USERNAME" == "all" ]; then
 fi
 
 # If the show_cluster is run for a specific user:
-# DOCKER_PS_CMD="docker -H $SWARM_MANAGER:4000 ps -a"
 __print_cluster_info
 
