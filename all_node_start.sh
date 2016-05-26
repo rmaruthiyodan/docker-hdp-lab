@@ -10,7 +10,7 @@ __start_cluster() {
 	for cluster_name in $($DOCKER_PS_CMD| grep "\/$USERNAME-" | awk -F "/" '{print $NF}' | cut -f 2 -d"-" | sort | uniq)
 	do
 		mod_start_cluster $USERNAME-$cluster_name
-		docker -H altair:4000 kill $(docker -H altair:4000 ps | grep $USERNAME-$cluster_name | awk -F "/" '{print $NF}')
+		docker -H $SWARM_MANAGER:4000 kill $(docker -H $SWARM_MANAGER:4000 ps | grep $USERNAME-$cluster_name | awk -F "/" '{print $NF}')
 	done
 }
 
