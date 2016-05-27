@@ -52,8 +52,8 @@ Repeat these steps for all the Docker Host Machines-
 
 *6. Run the "install" command:
 
-	cd docker-hdp-lab
-	./install.sh
+	# cd docker-hdp-lab
+	# ./install.sh
   (this  will install and configure docker-engine, and sets up & starts the Docker Swarm Cluster)
 
 
@@ -62,38 +62,45 @@ Repeat these steps for all the Docker Host Machines-
 
 *7. To start with, download the latest Ambari tarball locally:
 
-	.# cd /var/www/html/repo ; nohup wget http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.2.2.0/ambari-2.2.2.0-centos6.tar.gz &
+	# cd /var/www/html/repo ; nohup wget http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.2.2.0/ambari-2.2.2.0-centos6.tar.gz &
 
 	Extract the file once the Download is finished (monitor nohup.out file for the progress)
-	.# tar -xf ambari-2.2.2.0-centos6.tar.gz
+	# tar -xf ambari-2.2.2.0-centos6.tar.gz
 
 
 *8. And then run the build_image command
 (this step may take more than an hour, but it should be that slow only for the first image build process, since docker images re-uses the layers for the subsequent builds)
 Execute:
 
-	.# source /etc/docker-hdp-lab.conf
+	# source /etc/docker-hdp-lab.conf
 
-	.# nohup ./build_image.sh 2.2.2.0 http://$LOCAL_REPO_NODE/AMBARI-2.2.2.0/centos6/2.2.2.0-460/ &
+	# nohup ./build_image.sh 2.2.2.0 http://$LOCAL_REPO_NODE/AMBARI-2.2.2.0/centos6/2.2.2.0-460/ &
 
 Monitor "nohup.out" for completion. It will take more than an hour for the first image. And the subsequent image builds will be faster since it would use the existing layers.
 
 
 *9. Edit cluster.props file and create your first cluster:
 
-	.# create_cluster.sh cluster.props
+	# create_cluster.sh cluster.props
 To make the deployment even more faster, use local HDP repositories and specify their location inside "cluster.props" file
 
 
 *10. To see the list of Nodes & their IPs in your cluster run either of the below commands:
 
-	.# show_cluster all
+	# show_cluster.sh all
 
 	Or
 
-	.# show_cluster <username>
+	# show_cluster.sh <username>  
+	
+*11. Add route on your laptop/desktop to reach the Instance IPs directly, so that UIs such as Ambari or RM/NN UI can be opened in the local browser
 
-*11. Start using the scripts such as "start_cluster", "stop_cluster", "delete_cluster" and others to manage HDP clusters.
+	Example: # route add -net 10.0.5.0/24 $SWARM_MANAGER_IP  
+	Or 
+	Use ssh tunnels:   ssh -L 8080:10.0.5.5:8080 $SWARM_MANAGER_IP  
+	& use the broswer to open Ambari UI at http://127.0.0.1:8080
+
+*12. Start using the scripts such as "start_cluster", "stop_cluster", "delete_cluster" and others to manage HDP clusters.
 
 #####	Happy HDP'ing \o/
 
