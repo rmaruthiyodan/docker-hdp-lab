@@ -9,7 +9,7 @@ __start_cluster() {
 	echo $USERNAME
 	for cluster_name in $($DOCKER_PS_CMD| grep "\/$USERNAME-" | awk -F "/" '{print $NF}' | cut -f 2 -d"-" | sort | uniq)
 	do
-		mod_start_cluster $USERNAME-$cluster_name
+		mod_start_cluster.sh $USERNAME-$cluster_name
 		docker -H $SWARM_MANAGER:4000 kill $(docker -H $SWARM_MANAGER:4000 ps | grep $USERNAME-$cluster_name | awk -F "/" '{print $NF}')
 	done
 }
@@ -26,7 +26,7 @@ fi
 source /etc/docker-hdp-lab.conf
 
 DOCKER_PS_CMD="docker -H $SWARM_MANAGER:4000 ps -a"
-	
+
 
 if [ "$USERNAME" == "all" ]; then
 	#DOCKER_PS_CMD="docker -H $SWARM_MANAGER:4000 ps -a"
@@ -39,5 +39,4 @@ if [ "$USERNAME" == "all" ]; then
 	done
 	exit
 fi
-
 

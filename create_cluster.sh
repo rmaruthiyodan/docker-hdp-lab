@@ -1,8 +1,8 @@
-#!/bin/bash 
+#!/bin/bash
 ########
 # Author: Ratish Maruthiyodan
 # Project: Docker HDP Lab
-# Description: The first script in this proejct. Creates a new cluster using the given properties 
+# Description: The first script in this proejct. Creates a new cluster using the given properties
 ########
 
 
@@ -42,7 +42,7 @@ do
 		   exit
 		fi
 	fi
-done 
+done
 
 }
 
@@ -111,9 +111,9 @@ done
 #sleep 5
 for ip in $(awk '{print $1}' $USERNAME-$CLUSTERNAME-tmphostfile)
 do
-	while ! cat $USERNAME-$CLUSTERNAME-tmphostfile | ssh root@$ip "cat >> /etc/hosts"
+	while ! cat $USERNAME-$CLUSTERNAME-tmphostfile | ssh -o ConnectTimeout=4 -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip "cat >> /etc/hosts"
 	do
-	 echo "Initialization of " `grep $ip $USERNAME-$CLUSTERNAME-tmphostfile| awk '{print $2}'`  " is taking too long to complete.. waiting for another 5s"
+	 echo "Initialization of [" `grep $ip $USERNAME-$CLUSTERNAME-tmphostfile| awk '{print $2}'`  "] is taking some time to complete.. waiting for another 5s"
 	 sleep 5
 	done
 
@@ -129,14 +129,14 @@ do
 	echo "Sleeping for 10 seconds while waiting for initialization..."
 	sleep 10
 	loop=$(( $loop + 1 ))
-	if [ $loop -eq 4 ]
+	if [ $loop -eq 10 ]
 	then
 		echo "There is some error with the cluster connection. Stopping the newly created cluster..."
-		delete_cluster $USERNAME-$CLUSTERNAME	
+		delete_cluster.sh $USERNAME-$CLUSTERNAME
 		exit
 	fi
 
 	nc $AMBARI_SERVER_IP 8080 < /dev/null
 done
-sleep 10
+sleep 25
 generate_json.sh $CLUSTER_PROPERTIES $AMBARI_SERVER_IP

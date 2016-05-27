@@ -56,7 +56,7 @@ do
 		echo "Starting: " $INSTANCE_NAME
 		__start_instance
 		echo "$INSTANCE_NAME" | grep -q "ambari-server"
-		if [ "$?" -eq 0  ] 
+		if [ "$?" -eq 0  ]
 		then
 		  amb_server_restart_flag=1
 		fi
@@ -74,14 +74,14 @@ sleep 5
 amb_server_restart_flag=0
 for ip in $(docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker -H $SWARM_MANAGER:4000 ps -a | grep $USERNAME_CLUSTERNAME | awk -F "/" '{print $NF}'))
 do
-        while ! cat $TEMP_HOST_FILE | ssh root@$ip "cat > /etc/hosts"
+        while ! cat $TEMP_HOST_FILE | ssh -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip "cat > /etc/hosts"
         do
          echo "Initialization of [" `grep $ip $TEMP_HOST_FILE| awk '{print $2}'` "] is taking a bit long to complete.. waiting for another 5s"
          sleep 5
         done
-	if [ "$amb_server_restart_flag" -eq 1 ] 
+	if [ "$amb_server_restart_flag" -eq 1 ]
 	then
-	  ssh root@$ip "service ambari-agent restart"
+	  ssh -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip "service ambari-agent restart"
 	fi
 done
 
@@ -91,4 +91,3 @@ __start_services
 
 
 rm -f $TEMP_HOST_FILE
-

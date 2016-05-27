@@ -14,7 +14,7 @@ __daily_stop_cluster() {
     if [ $? -gt 0 ]
     then
       echo -e "\nCluster:: $USERNAME-$cluster_name" >> $OUTFILE
-      
+
       for node_name in $($DOCKER_PS_CMD | grep "$USERNAME-" | grep "\-$cluster_name-" | awk -F "/" '{print $NF}' | cut -f 3-8 -d"-")
       do
         INSTANCE_NAME=$USERNAME-$cluster_name-$node_name

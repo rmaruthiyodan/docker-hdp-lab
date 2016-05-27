@@ -19,10 +19,10 @@ then
   exit
 fi
 
-stop_cluster $1
+stop_cluster.sh $1
 
 if [  "$?" -ne 0 ]
-then	
+then
 	exit
 fi
 

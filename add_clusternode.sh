@@ -37,7 +37,7 @@ then
   echo -e "\nNon existing Cluster $CLUSTERNAME. Please check the Username-Clustername parameteri\n"
   exit
 fi
-	
+
 }
 
 __find_ambari_image_ver() {
@@ -58,7 +58,7 @@ __add_host_and_install_components() {
     for COMPONENT in $LIST_OF_COMPONENTS
     do
 	curl  --user admin:admin -H "X-Requested-By: ambari" -i -X PUT -d '{"HostRoles": {"state": "STARTED"}}' http://$AMBARI_SERVER_IP:8080/api/v1/clusters/$CLUSTERNAME/hosts/$NODENAME/host_components/$COMPONENT
-    done    
+    done
 }
 
 #set -x
@@ -95,7 +95,7 @@ INSTANCE_NAME=$USERNAME-$CLUSTERNAME-$SHORT_NODENAME
 echo $NODENAME
 
 __create_instance
-start_cluster $USERNAME_CLUSTER
+start_cluster.sh $USERNAME_CLUSTER
 LIST_OF_COMPONENTS="HDFS_CLIENT MAPREDUCE2_CLIENT YARN_CLIENT ZOOKEEPER_CLIENT"
 AMBARI_SERVER_IP=`docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $USERNAME-$CLUSTERNAME-ambari-server`
 __add_host_and_install_components
