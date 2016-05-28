@@ -21,18 +21,23 @@ Multiple Docker Host Machines can be used in a Docker Swarm cluster to provide t
 
 Repeat these steps for all the Docker Host Machines-
 
-*1. Install the required Docker packages
-(refer: https://docs.docker.com/engine/installation/linux/centos/ )
+*1. Install a Minimal setup of Centos7 / RHEL7 / OEL7 Operating System on a Physical Hardware / Virtual Box / OpenStack Instance.  
 
-*2. Download the docker-hdp-lab setup files:
+*2. Install the package "git" using yum:  
+	yum install -y git  
+
+*3. Install the required Docker packages (Optional Step, since the ./install script would install docker-engine)  
+  (refer: https://docs.docker.com/engine/installation/linux/centos/ )
+
+*4. Download the docker-hdp-lab setup files:
 
 	git clone https://github.com/rmaruthiyodan/docker-hdp-lab/
 
-*3. Place the config file - "docker-hdp-lab.conf" in /etc/
+*5. Place the config file - "docker-hdp-lab.conf" in /etc/  
 	cd docker-hdp-lab
 	cp docker-hdp-lab.conf /etc/
 
-*4. Edit the configs at "/etc/docker-hdp-lab.conf" and set the following properties as appropriate for your environment:
+*6. Edit the configs in: '/etc/docker-hdp-lab.conf' and set the following properties as appropriate for your environment:
 
 ---
 
@@ -40,17 +45,17 @@ Repeat these steps for all the Docker Host Machines-
 > LOCAL_REPO_NODE  -  Defines the Docker Host where the local repos will be saved and which will run a httpd instance to serve local repos.
 > DEFAULT_DOMAIN_NAME  -  This will be the name set for the overlay network.
 > OVERLAY_NETWORK  -  Defines the subnet and the netmask for the overlay network(example: 10.0.1.0/24).
-> LOCAL_IP  -  Define the IP address of the Docker host.
-
+> LOCAL_IP  -  Define the IP address of the Docker host.  
+  
 >  The SWARM_MANAGER Docker Host will run the following instances as well:
 >  i_ consul instance
 >  ii_ overlay-gatewaynode
 
 ---
 
-*5. Check (and config if needed) that all the Docker host machines can resolve each other's hostnames (FQDN) , including its own hostname.
+*7. Check (and config if needed) that all the Docker host machines can resolve each other's hostnames (FQDN) , including its own hostname.
 
-*6. Run the "install" command:
+*8. Run the "install" command:
 
 	# cd docker-hdp-lab
 	# ./install.sh
@@ -60,7 +65,7 @@ Repeat these steps for all the Docker Host Machines-
 ##### At this Stage the setup is completed and let's start using it...
 
 
-*7. To start with, download the latest Ambari tarball locally:
+*9. To start with, download the latest Ambari tarball locally:
 
 	# cd /var/www/html/repo ; nohup wget http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.2.2.0/ambari-2.2.2.0-centos6.tar.gz &
 
@@ -68,7 +73,7 @@ Repeat these steps for all the Docker Host Machines-
 	# tar -xf ambari-2.2.2.0-centos6.tar.gz
 
 
-*8. And then run the build_image command. Specify the Ambari version along with the Repository Base URL  
+*10. And then run the build_image command. Specify the Ambari version along with the Repository Base URL  
 (this step may take more than an hour, but it should be that slow only for the first image build process, since docker images re-uses the layers for the subsequent builds)
 Execute:
 
@@ -79,13 +84,13 @@ Execute:
 Monitor "nohup.out" for completion. It will take more than an hour for the first image. And the subsequent image builds will be faster since it would use the existing layers.
 
 
-*9. Edit cluster.props file and create your first cluster:
+*11. Edit cluster.props file and create your first cluster:
 
 	# create_cluster.sh cluster.props
 To make the deployment even more faster, use local HDP repositories and specify their location inside "cluster.props" file
 
 
-*10. To see the list of Nodes & their IPs in your cluster run either of the below commands:
+*12. To see the list of Nodes & their IPs in your cluster run either of the below commands:
 
 	# show_cluster.sh all
 
@@ -93,14 +98,14 @@ To make the deployment even more faster, use local HDP repositories and specify 
 
 	# show_cluster.sh <username>  
 	
-*11. Add route on your laptop/desktop to reach the Instance IPs directly, so that UIs such as Ambari or RM/NN UI can be opened in the local browser
+*13. Add route on your laptop/desktop to reach the Instance IPs directly, so that UIs such as Ambari or RM/NN UI can be opened in the local browser
 
 	Example: # route add -net 10.0.5.0/24 $SWARM_MANAGER_IP  
 	Or 
 	Use ssh tunnels:   ssh -L 8080:10.0.5.5:8080 $SWARM_MANAGER_IP  
 	& use the broswer to open Ambari UI at http://127.0.0.1:8080
 
-*12. Start using the scripts such as "start_cluster", "stop_cluster", "delete_cluster" and others to manage HDP clusters.
+*14. Start using the scripts such as "start_cluster", "stop_cluster", "delete_cluster" and others to manage HDP clusters.
 
 #####	Happy HDP'ing \o/
 
