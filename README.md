@@ -21,9 +21,10 @@ Multiple Docker Host Machines can be used in a Docker Swarm cluster to provide t
 
 Repeat these steps for all the Docker Host Machines-
 
-*1. Install a Minimal setup of Centos7 / RHEL7 / OEL7 Operating System on a Physical Hardware / Virtual Box / OpenStack Instance.  
+*1. Install a Minimal setup of centos7 / rhel7 / oel7 OS on a Physical Hardware / VirtualBox / OpenStack Instance.  
 
 *2. Install the package "git" using yum:  
+
 	yum install -y git  
 
 *3. Install the required Docker packages (Optional Step, since the ./install script would install docker-engine)  
@@ -34,6 +35,7 @@ Repeat these steps for all the Docker Host Machines-
 	git clone https://github.com/rmaruthiyodan/docker-hdp-lab/
 
 *5. Place the config file - "docker-hdp-lab.conf" in /etc/  
+
 	cd docker-hdp-lab
 	cp docker-hdp-lab.conf /etc/
 
