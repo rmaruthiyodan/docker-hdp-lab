@@ -6,10 +6,11 @@
 ########
 
 #set -x
+set -e
 
 if [ ! -f "/etc/docker-hdp-lab.conf" ]
 then
-	echo -e "\nFile not Found: \"/etc/docer-hdp-lab.conf\".\nCopy the file \"docker-hdp-lab.conf\" to /etc/ and configure it first\n"
+	echo -e "\n\tFile not Found: [ /etc/docker-hdp-lab.conf ] \nCopy the File: \"docker-hdp-lab.conf\" to /etc and Configure it Before Running ./install\n"
 	exit 1
 fi
 
@@ -39,8 +40,10 @@ fi
 echo "echo \"never\" > /sys/kernel/mm/transparent_hugepage/enabled" >> /etc/rc.local
 echo "echo \"never\" > /sys/kernel/mm/transparent_hugepage/defrag" >> /etc/rc.local
 echo 0 > /proc/sys/vm/swappiness
+service firewalld stop
+systemctl disable firewalld.service 
 
-echo "Checking if there exists RSA keys for SSH..."
+echo -e "\n\tChecking if the user already has RSA keys for SSH & Creating if not...\n"
 if [ ! -e /root/.ssh/id_rsa ] || [  ! -e /root/.ssh/id_rsa.pub ]
 then
 	ssh-keygen
@@ -51,18 +54,28 @@ rm -f ambari-server-template/id_rsa*
 cp  /root/.ssh/id_rsa* ambari-agent-template/
 cp  /root/.ssh/id_rsa* ambari-server-template/
 
-mkdir /opt/docker_cluster
+echo "Deleting existing directories if exists at /opt/docker_cluster/ambari-agent-template and /opt/docker_cluster/ambari-server-template"
+set +e
 rm -rf /opt/docker_cluster/ambari-agent-template
 rm -rf /opt/docker_cluster/ambari-server-template
+set -e
+
+if [ ! -d "/opt/docker_cluster" ]
+then
+	mkdir /opt/docker_cluster
+fi
 cp  -r ambari-agent-template /opt/docker_cluster
 cp  -r ambari-server-template /opt/docker_cluster
 
-yum install nc
+
+yum install -y nc wget
 yum update -y
 echo "1" > /proc/sys/net/ipv4/ip_forward
 
+echo -e "\n\tSetting up Docker Yum Repo and Installing Docker Engine\n"
+
 ### Setup Docker repo
-tee /tmp/docker.repo <<-'EOF'
+tee /etc/yum.repos.d/docker.repo <<-'EOF'
 [dockerrepo]
 name=Docker Repository
 baseurl=https://yum.dockerproject.org/repo/main/centos/$releasever/
@@ -73,31 +86,43 @@ EOF
 
 yum install -y docker-engine
 
-chkconfig docker on
+set +e
+systemctl enable docker
+set -e
 
 sed -i "/ExecStart=/c\ExecStart=\/usr\/bin\/docker daemon -H tcp\:\/\/$LOCAL_IP:2375  -H unix:\/\/\/var\/run\/docker.sock --cluster-store=consul\:\/\/$CONSUL_MANAGER:8500 --cluster-advertise=$LOCAL_IP\:2375" /etc/systemd/system/multi-user.target.wants/docker.service
 sed -i "/ExecStart=/c\ExecStart=\/usr\/bin\/docker daemon -H tcp\:\/\/$LOCAL_IP:2375  -H unix:\/\/\/var\/run\/docker.sock --cluster-store=consul\:\/\/$CONSUL_MANAGER:8500 --cluster-advertise=$LOCAL_IP\:2375" /usr/lib/systemd/system/docker.service
 systemctl daemon-reload
 service docker start
 
+sleep 5
 if [ $SWARM_MANAGER == $HOSTNAME ]
 then
-	echo -e "\n\tStarting Consul instance (takes a few seconds to start)"
+	echo -e "\n\tStarting Consul instance (takes a few seconds to start)\n"
 	docker run -d -p 8500:8500 --name=consul progrium/consul -server -bootstrap
 
-	sleep 10
-	echo -e "\n\tStarting swarm manager and then 20s sleep"
+	sleep 20
+	echo -e "\n\tStarting swarm manager and then 15s sleep\n"
 	docker run -d -p 4000:4000 --name=swarm_manager swarm manage -H :4000 --replication --advertise $LOCAL_IP:4000 consul://$CONSUL_MANAGER:8500
 
-	sleep 20
-	echo -e "\n\tStarting Swarm join and 10s sleep"
+	sleep 15
+	echo -e "\n\tStarting Swarm join and 10s sleep\n"
 	docker run --name=swarm_join  -d swarm join --advertise=$LOCAL_IP:2375 consul://$CONSUL_MANAGER:8500
 
 	sleep 10
-	echo -e "\n \t Creating Overlay network..."
+	echo -e "\n \tCreating Overlay network...\n"
 	docker -H $SWARM_MANAGER_IP:4000 network create --driver overlay --subnet=$OVERLAY_NETWORK $DEFAULT_DOMAIN_NAME
-	mkdir /tmp/gateway-instance
-
+	
+	if [ $? -ne 0 ]
+	then
+	   echo -e "\nCheck whether the consul instance is running and port 8500 is reachable. May be the host firewall is running\n"
+	fi
+	if [ ! -d "/opt/docker_cluster" ]
+	then
+		mkdir /tmp/gateway-instance
+	fi
+	
+	echo -e "\n\t Creating Overlay Network Gateway Instance \n"
 	cat > /tmp/gateway-instance/start << EOF
 #!/bin/bash
 service sshd restart
@@ -124,26 +149,39 @@ EOF
 	sleep 5
 	docker run -d --hostname overlay-gatewaynode --name overlay-gatewaynode  --net $DEFAULT_DOMAIN_NAME --net-alias=overlay-gatewaynode  --privileged gatewaynode
 	OVERLAY_GATEWAY_IP=$(docker exec overlay-gatewaynode hostname -i | awk '{print $2}')
+	echo -e "\n\t Adding Route to reach the Overlay Network :: route add -net $OVERLAY_NETWORK gw $OVERLAY_GATEWAY_IP\n"
+	set +e
+	route delete -net $OVERLAY_NETWORK 
 	route add -net $OVERLAY_NETWORK gw $OVERLAY_GATEWAY_IP
-
-
+	set -e
 else
         docker run -d swarm join --advertise=$LOCAL_IP:2375 consul://$CONSUL_MANAGER:8500
-	route add -net $OVERLAY_NETWORK gw $SWARM_MANAGER_IP
+	if [ $(route -n | grep -q $(echo $OVERLAY_NETWORK | awk -F "/" '{print $1}')) ]
+ 	then
+	    route add -net $OVERLAY_NETWORK gw $SWARM_MANAGER_IP
+ 	fi
+
 fi
 
 if [ $LOCAL_REPO_NODE == $HOSTNAME  ]
 then
-	mkdir /var/www/html/repo
+	if [ ! -d /var/www/html/repo ]
+	then
+	   mkdir -p /var/www/html/repo
+	fi
 	docker run -d --hostname localrepo --name localrepo -p 80:80 --privileged -v /var/www/html/repo:/usr/local/apache2/htdocs/ httpd:2.4
 fi
 
 cp docker-hdp-lab_service.sh /opt/docker_cluster
-cp docker-hdp-lab.service /etc/systemd/system
+cp docker-hdp-lab.service /etc/systemd/system/
+set +e
 systemctl enable docker-hdp-lab.service
+set -e
 
+echo -e "\n\t Adding $PWD to \$PATH\n" 
 export PATH=$PATH:$PWD
 echo "PATH=$PATH" > /etc/profile.d/docker.sh
 chmod +x /etc/profile.d/docker.sh
 systemctl start docker-hdp-lab
 
+echo -e "\n\t Docker-HDP-Lab Setup Complete \n"

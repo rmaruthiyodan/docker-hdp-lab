@@ -66,7 +66,12 @@ start() {
  fi
  if [ $(route -n | grep -q $(echo $OVERLAY_NETWORK | awk -F "/" '{print $1}')) ]
  then
-	 route add -net $OVERLAY_NETWORK gw $(docker -H $SWARM_MANAGER:4000 exec overlay-gatewaynode hostname -i | awk '{print $2}')
+	if [ $SWARM_MANAGER == $HOSTNAME ]
+	then
+	    route add -net $OVERLAY_NETWORK gw $(docker -H $SWARM_MANAGER:4000 exec overlay-gatewaynode hostname -i | awk '{print $2}')
+	else
+	    route add -net $OVERLAY_NETWORK gw $SWARM_MANAGER
+	fi
  fi
  exit 0
 }

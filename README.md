@@ -68,7 +68,7 @@ Repeat these steps for all the Docker Host Machines-
 	# tar -xf ambari-2.2.2.0-centos6.tar.gz
 
 
-*8. And then run the build_image command
+*8. And then run the build_image command. Specify the Ambari version along with the Repository Base URL
 (this step may take more than an hour, but it should be that slow only for the first image build process, since docker images re-uses the layers for the subsequent builds)
 Execute:
 
