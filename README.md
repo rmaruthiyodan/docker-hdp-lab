@@ -4,6 +4,7 @@
 
 ##### To achieve the target of building and starting a complete HDP cluster in less than 5 minutes, using Docker based instances.
 
+-------
 
 #### Introduction
 
@@ -11,6 +12,7 @@ To automate building HDP clusters at such a fast pace, we Run HDP Clusters using
 And we prepare ambari-agent and ambari-server images for various releases in addition to maintaining a local HDP repository for all possible versions.
 Further, we make use of Ambari blueprints to install and start HDP services in the clusters.
 
+-------
 
 #### Building a Docker HDP Lab
 
@@ -63,6 +65,7 @@ Repeat these steps for all the Docker Host Machines-
 	# ./install.sh
   (this  will install and configure docker-engine, and sets up & starts the Docker Swarm Cluster)
 
+-------
 
 ##### At this Stage the setup is completed and let's start using it...
 
@@ -107,7 +110,11 @@ To make the deployment even more faster, use local HDP repositories and specify 
 	Use ssh tunnels:   ssh -L 8080:10.0.5.5:8080 $SWARM_MANAGER_IP  
 	& use the broswer to open Ambari UI at http://127.0.0.1:8080
 
-*14. Start using the scripts such as "start_cluster", "stop_cluster", "delete_cluster" and others to manage HDP clusters.
+*14. Start using the scripts such as "start_cluster", "stop_cluster", "delete_cluster" and others to manage HDP clusters.  
+  
+Instructions on How to Manage HDP Clusters inside the Docker-HDP-Lab Cluster is given at: https://github.com/rmaruthiyodan/docker-hdp-lab/wiki/Managing-HDP-Clusters-in-the-docker-hdp-lab-Cluster
+
+---------
 
 #####	Happy HDP'ing \o/
 
