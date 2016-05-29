@@ -1,5 +1,6 @@
 [Unit]
 Description=Docker HDP Lab Cluster
+After=docker.service
 
 [Service]
 Type=notify
