@@ -64,7 +64,8 @@ start() {
 	fi
 	docker start localrepo
  fi
- if [ $(route -n | grep -q $(echo $OVERLAY_NETWORK | awk -F "/" '{print $1}')) ]
+ route -n | grep -q $(echo $OVERLAY_NETWORK | awk -F "/" '{print $1}')
+ if [ $? -ne 0 ]
  then
 	if [ $SWARM_MANAGER == $HOSTNAME ]
 	then
