@@ -6,7 +6,7 @@
 ########
 
 #set -x
-set -e
+#set -e
 
 if [ ! -f "/etc/docker-hdp-lab.conf" ]
 then
@@ -40,8 +40,6 @@ fi
 echo "echo \"never\" > /sys/kernel/mm/transparent_hugepage/enabled" >> /etc/rc.local
 echo "echo \"never\" > /sys/kernel/mm/transparent_hugepage/defrag" >> /etc/rc.local
 echo 0 > /proc/sys/vm/swappiness
-service firewalld stop
-systemctl disable firewalld.service 
 
 echo -e "\n\tChecking if the user already has RSA keys for SSH & Creating if not...\n"
 if [ ! -e /root/.ssh/id_rsa ] || [  ! -e /root/.ssh/id_rsa.pub ]
@@ -53,6 +51,18 @@ rm -f  ambari-agent-template/id_rsa*
 rm -f ambari-server-template/id_rsa*
 cp  /root/.ssh/id_rsa* ambari-agent-template/
 cp  /root/.ssh/id_rsa* ambari-server-template/
+
+yum install -y nc wget
+yum update -y
+
+echo -e "\nPlease Restart the node if there were kernel updates applied. Some of the features require later versions of kernel"
+read -p "Would you like to exit the Install and Reboot the node manually ? [Y/N] : " choice
+if [ "$choice" == "Y" ] || [ "$choice" == "y" ]
+then
+	echo -e "\n\tAfter Restarting the System, please run ./install again\n"
+        exit 0
+fi
+
 
 echo "Deleting existing directories if exists at /opt/docker_cluster/ambari-agent-template and /opt/docker_cluster/ambari-server-template"
 set +e
@@ -68,8 +78,12 @@ cp  -r ambari-agent-template /opt/docker_cluster
 cp  -r ambari-server-template /opt/docker_cluster
 
 
-yum install -y nc wget
-yum update -y
+
+set +e
+service firewalld stop
+systemctl disable firewalld.service
+set -e
+
 echo "1" > /proc/sys/net/ipv4/ip_forward
 
 echo -e "\n\tSetting up Docker Yum Repo and Installing Docker Engine\n"
@@ -117,7 +131,7 @@ then
 	then
 	   echo -e "\nCheck whether the consul instance is running and port 8500 is reachable. May be the host firewall is running\n"
 	fi
-	if [ ! -d "/opt/docker_cluster" ]
+	if [ ! -d "/tmp/gateway-instance" ]
 	then
 		mkdir /tmp/gateway-instance
 	fi
