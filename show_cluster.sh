@@ -29,6 +29,7 @@ __print_cluster_info() {
 }
 
 
+#set -x
 if [ $# -lt 1 ];then
  echo "Usage:: show_cluster.sh < all | username > [online]"
  echo "Displaying cluster for the current user " $USER
@@ -50,7 +51,7 @@ fi
 if [ "$USERNAME" == "all" ]; then
 	echo "Listing nodes from all clusters ..."
 	#DOCKER_PS_CMD="docker -H $SWARM_MANAGER:4000 ps -a"
- 	all_users=$($DOCKER_PS_CMD | grep ambari | awk '{print $NF}' | cut -f 1 -d "-" | cut -f 2 -d "/"| sort | uniq)
+ 	all_users=$($DOCKER_PS_CMD | grep ambari | awk -F "/" '{print $NF}' | cut -f 1 -d"-"| sort | uniq)
 	num_of_users=$(echo $all_users | wc -w)
 
 	for i in $all_users; do

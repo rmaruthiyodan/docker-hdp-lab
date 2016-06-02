@@ -132,8 +132,12 @@ do
 	if [ $loop -eq 10 ]
 	then
 		echo "There is some error with the cluster connection. Stopping the newly created cluster..."
-		delete_cluster.sh $USERNAME-$CLUSTERNAME
-		exit
+		read -p "Would you like to continue waiting for Ambari-Server to initialize ? [Y/N] " choice
+		if [ "$choice" != "Y" ] && [ "$choice" != "y" ]
+		then
+			delete_cluster.sh $USERNAME-$CLUSTERNAME
+        		exit 1
+		fi	
 	fi
 
 	nc $AMBARI_SERVER_IP 8080 < /dev/null
