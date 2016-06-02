@@ -131,10 +131,11 @@ do
 	loop=$(( $loop + 1 ))
 	if [ $loop -eq 10 ]
 	then
-		echo "There is some error with the cluster connection. Stopping the newly created cluster..."
-		read -p "Would you like to continue waiting for Ambari-Server to initialize ? [Y/N] " choice
+		echo -e "\nThere may be some error with the Ambari-Server connection or service startup..."
+		read -p "Would you like to continue waiting for Ambari-Server to initialize ? [Y/N] : " choice
 		if [ "$choice" != "Y" ] && [ "$choice" != "y" ]
 		then
+			echo -e "\n\tStopping the newly created cluster..."
 			delete_cluster.sh $USERNAME-$CLUSTERNAME
         		exit 1
 		fi	
