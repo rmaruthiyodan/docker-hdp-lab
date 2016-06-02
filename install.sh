@@ -17,6 +17,13 @@ fi
 source /etc/docker-hdp-lab.conf
 
 SWARM_MANAGER_IP=$(getent ahosts $SWARM_MANAGER | head -n 1 | awk '{print $1}')
+if [ -z $SWARM_MANAGER_IP ]
+then
+	echo -e "\nCheck the value set for SWARM_MANAGER host in the config file /etc/docker-hdp-lab.conf"
+	echo -e "Its Either Incorrect Or the Hostname [ $SWARM_MANAGER ] Cannot be Resolved..\n"
+	exit 1
+fi
+
 CONSUL_MANAGER=$SWARM_MANAGER_IP
 
 echo -e "\nContinuing the install will overwrite the existing files, if the Docker-hdp-lab was already setup on this host"
@@ -110,7 +117,7 @@ systemctl daemon-reload
 service docker start
 
 sleep 5
-if [ $SWARM_MANAGER == $HOSTNAME ]
+if [ $SWARM_MANAGER == $HOSTNAME ] || [ $SWARM_MANAGER == `hostname -s` ] || [ $SWARM_MANAGER == `hostname -f` ]
 then
 	echo -e "\n\tStarting Consul instance (takes a few seconds to start)\n"
 	docker run -d -p 8500:8500 --name=consul progrium/consul -server -bootstrap
