@@ -84,7 +84,18 @@ source /etc/docker-hdp-lab.conf
 if [ $# -ne 2 ];then
  echo -e "\nInvalid Number of Argument(s)"
  echo "Usage::  build_image.sh <AmbariVersion> <RepoURL>"
- echo -e "Example::  ./build_image.sh  2.2.2.0  http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.2.2.0/\n"
+ echo -e "\nExample:: Using Public Repository...\n\t build_image.sh  2.2.2.0  http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.2.2.0/"
+ echo -e "\t build_image.sh 2.2.1.1  http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.2.1.1"
+ echo -e "\t build_image.sh 2.2.1.0  http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.2.1.0 "
+ echo -e "\t build_image.sh 2.2.0.0  http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.2.0.0 "
+ echo -e "\t build_image.sh 2.1.2.1  http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.1.2.1 "
+ echo -e "\t build_image.sh 2.1.2    http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.1.2 "
+ echo -e "\t build_image.sh 2.1.1    http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.1.1 "
+ echo -e "\t build_image.sh 2.1.0    http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.1.0 "
+ echo -e "\t build_image.sh 2.0.2    http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.0.2 "
+ echo -e "\t build_image.sh 2.0.1    http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.0.1 "
+ echo -e "\t build_image.sh 2.0.0    http://public-repo-1.hortonworks.com/ambari/centos6/2.x/updates/2.0.0 "
+ echo -e "\t build_image.sh  1.7.0   http://public-repo-1.hortonworks.com/ambari/centos6/1.x/updates/1.7.0\n\n"
  exit 1
 fi
 
