@@ -23,7 +23,7 @@ then
 	echo -e "Its Either Incorrect Or the Hostname [ $SWARM_MANAGER ] Cannot be Resolved..\n"
 	exit 1
 fi
-exit
+
 CONSUL_MANAGER=$SWARM_MANAGER_IP
 
 echo -e "\nContinuing the install will overwrite the existing files, if the Docker-hdp-lab was already setup on this host"
