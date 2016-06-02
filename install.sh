@@ -110,7 +110,7 @@ systemctl daemon-reload
 service docker start
 
 sleep 5
-if [ $SWARM_MANAGER == $HOSTNAME ]
+if [ $SWARM_MANAGER == $HOSTNAME ] || [ $SWARM_MANAGER == `hostname -s` ] || [ $SWARM_MANAGER == `hostname -f` ]
 then
 	echo -e "\n\tStarting Consul instance (takes a few seconds to start)\n"
 	docker run -d -p 8500:8500 --name=consul progrium/consul -server -bootstrap
