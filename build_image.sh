@@ -65,12 +65,12 @@ __distribute_n_build(){
 		ssh -o ConnectTimeout=4 -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q root@$DH mkdir -p /opt/docker_cluster/ambari-server-$AMBARI_VERSION
 		scp -o ConnectTimeout=4 -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no /opt/docker_cluster/ambari-server-$AMBARI_VERSION/ambari-server-$AMBARI_VERSION.tar root@$DH:/opt/docker_cluster/ambari-server-$AMBARI_VERSION/
 
-		ssh -q root@$DH mkdir -p /opt/docker_cluster/ambari-agent-$AMBARI_VERSION
-		scp /opt/docker_cluster/ambari-agent-$AMBARI_VERSION/ambari-agent-$AMBARI_VERSION.tar root@$DH:/opt/docker_cluster/ambari-agent-$AMBARI_VERSION/
+		ssh -o ConnectTimeout=4 -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q root@$DH mkdir -p /opt/docker_cluster/ambari-agent-$AMBARI_VERSION
+		scp -o ConnectTimeout=4 -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no /opt/docker_cluster/ambari-agent-$AMBARI_VERSION/ambari-agent-$AMBARI_VERSION.tar root@$DH:/opt/docker_cluster/ambari-agent-$AMBARI_VERSION/
 
 	 	echo -e "\nBuilding local images"
-		ssh -q root@$DH "cat /opt/docker_cluster/ambari-server-$AMBARI_VERSION/ambari-server-$AMBARI_VERSION.tar | docker load"
-		ssh -q root@$DH "cat /opt/docker_cluster/ambari-agent-$AMBARI_VERSION/ambari-agent-$AMBARI_VERSION.tar | docker load"
+		ssh -o ConnectTimeout=4 -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q root@$DH "cat /opt/docker_cluster/ambari-server-$AMBARI_VERSION/ambari-server-$AMBARI_VERSION.tar | docker load"
+		ssh -o ConnectTimeout=4 -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -q root@$DH "cat /opt/docker_cluster/ambari-agent-$AMBARI_VERSION/ambari-agent-$AMBARI_VERSION.tar | docker load"
 		echo "Done"
 	     fi
 	done
