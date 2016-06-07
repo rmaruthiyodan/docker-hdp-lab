@@ -24,6 +24,9 @@ start() {
  echo "never" > /sys/kernel/mm/transparent_hugepage/enabled
  echo "never" > /sys/kernel/mm/transparent_hugepage/defrag
 
+ # Enabling ip_forward
+ echo "1" > /proc/sys/net/ipv4/ip_forward
+
  if [ $SWARM_MANAGER == $HOSTNAME ]
  then
 	docker ps -a | grep -q "consul"
