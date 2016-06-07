@@ -63,7 +63,7 @@ yum install -y nc wget net-tools
 yum update -y
 
 echo -e "\nPlease Restart the node if there were kernel updates applied. Some of the features require later versions of kernel"
-read -p "Would you like to exit the Install and Reboot the node manually ? [Y/N] : " choice
+read -p "Press 'Y' to Exit the Install & manually reboot the node Or 'N' to continue with install [Y/N] : " choice
 if [ "$choice" == "Y" ] || [ "$choice" == "y" ]
 then
 	echo -e "\n\tAfter Restarting the System, please run ./install again\n"
