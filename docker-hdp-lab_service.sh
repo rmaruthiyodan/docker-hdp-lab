@@ -64,13 +64,24 @@ start() {
 	fi
 	docker start localrepo
  fi
+
+docker ps | grep -q swarm_join
+if [ $? -ne 0 ]
+then
+	echo -e "\nStarting Swarm Join Instance..."
+	docker start swarm_join
+fi
+
  route -n | grep -q $(echo $OVERLAY_NETWORK | awk -F "/" '{print $1}')
  if [ $? -ne 0 ]
  then
+	echo "Adding Route Entry to reach Overlay network:: "
 	if [ $SWARM_MANAGER == $HOSTNAME ]
 	then
+	    echo "route add -net $OVERLAY_NETWORK gw $(docker -H $SWARM_MANAGER:4000 exec overlay-gatewaynode hostname -i | awk '{print $2}')"
 	    route add -net $OVERLAY_NETWORK gw $(docker -H $SWARM_MANAGER:4000 exec overlay-gatewaynode hostname -i | awk '{print $2}')
 	else
+	    echo "route add -net $OVERLAY_NETWORK gw $SWARM_MANAGER"
 	    route add -net $OVERLAY_NETWORK gw $SWARM_MANAGER
 	fi
  fi
