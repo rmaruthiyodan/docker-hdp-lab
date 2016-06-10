@@ -94,7 +94,7 @@ For this, go to the Server desginated for LocalRepository and run -
 	# nohup build_image.sh 2.2.2.0 http://$LOCAL_REPO_NODE/AMBARI-2.2.2.0/centos6/2.2.2.0-460/  &  
 
   
-*11. Download and prepare Local HDP Repository for all the required versions  
+*11. On the LocalRepository server, download and prepare Local HDP Repository for all the required versions  
   
 	# localize_hdp.sh add <HDP_VERSION> <HDP Tarball URL>
 	Example::  
