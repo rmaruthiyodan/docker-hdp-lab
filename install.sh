@@ -208,4 +208,16 @@ echo "PATH=$PATH" > /etc/profile.d/docker.sh
 chmod +x /etc/profile.d/docker.sh
 systemctl start docker-hdp-lab
 
-echo -e "\n\t Docker-HDP-Lab Setup Complete \n"
+echo "-----------------------------------------------------"
+echo -e "\n\t $(tput setaf 2)Docker-HDP-Lab Setup is now Complete !$(tput sgr 0) \n"
+echo "-----------------------------------------------------"
+echo -e "\nNext, Build Ambari Images for various versions:: Run $(tput setaf 1)\"build_image.sh\"$(tput sgr 0) script for more help\n"
+echo -e "\nAnd then Localize all the required HDP releases. For example: $(tput setaf 1)"
+echo -e "\tlocalize_hdp.sh add 2.4.2.0 http://public-repo-1.hortonworks.com/HDP/centos6/2.x/updates/2.4.2.0/HDP-2.4.2.0-centos6-rpm.tar.gz"
+echo -e "\tlocalize_hdp.sh add 2.4.0.0 http://public-repo-1.hortonworks.com/HDP/centos6/2.x/updates/2.4.0.0/HDP-2.4.0.0-centos6-rpm.tar.gz"
+echo -e "\tlocalize_hdp.sh add 2.3.4.7 http://public-repo-1.hortonworks.com/HDP/centos6/2.x/updates/2.3.4.7/HDP-2.3.4.7-centos6-rpm.tar.gz"
+echo -e "\tlocalize_hdp.sh add 2.3.4.0 http://public-repo-1.hortonworks.com/HDP/centos6/2.x/updates/2.3.4.0/HDP-2.3.4.0-centos6-rpm.tar.gz"
+echo -e "\tlocalize_hdp.sh add 2.3.2.0 http://public-repo-1.hortonworks.com/HDP/centos6/2.x/updates/2.3.2.0/HDP-2.3.2.0-centos6-rpm.tar.gz"
+echo -e "\tlocalize_hdp.sh add 2.2.8.0 http://public-repo-1.hortonworks.com/HDP/centos6/2.x/updates/2.2.8.0/HDP-2.2.8.0-centos6-rpm.tar.gz"
+echo -e "$(tput sgr 0)\n\n"
+
