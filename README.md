@@ -62,8 +62,14 @@ Repeat these steps for all the Docker Host Machines-
 *8. Run the "install" command:
 
 	# cd docker-hdp-lab
-	# ./install.sh
-  (this  will install and configure docker-engine, and sets up & starts the Docker Swarm Cluster)
+	# ./install.sh  
+	
+>Run the install.sh command first on the node that will act as SWARM Manager Node, and then on LocalRepository server and others.
+ The "install.sh" script mainly does the following activities:
+ a) Installs and configures docker-engine
+ b) Starts consul, SWARM Manager and swarm join containers
+ c) Creates overlay network and creates a Gateway Container
+ d) Enables and starts the systemd service: docker-hdp-lab.service
 
 -------
 
