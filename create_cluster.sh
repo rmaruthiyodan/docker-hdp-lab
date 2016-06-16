@@ -71,7 +71,7 @@ if [ ! $USERNAME ] || [ ! $CLUSTERNAME ] || [ ! $CLUSTER_VERSION ] || [ ! $AMBAR
  exit
 fi
 
-if [ $NUM_OF_NODES -ne `grep "HOST[0-9]=" $CLUSTER_PROPERTIES| wc -l` ]
+if [ $NUM_OF_NODES -ne `grep "HOST[0-9]*=" $CLUSTER_PROPERTIES| wc -l` ]
 then
   echo -e "\tNUM_OF_NODES in the cluster properties file does not match the defined hosts"
   exit
