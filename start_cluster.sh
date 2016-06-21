@@ -14,14 +14,22 @@ __populate_hostsfile(){
 	HOST_NAME=`docker -H $SWARM_MANAGER:4000 inspect --format='{{.Config.Hostname}}' $INSTANCE_NAME`
 	DOMAIN_NAME=`docker -H $SWARM_MANAGER:4000 inspect --format='{{.Config.Domainname}}' $INSTANCE_NAME`
 	echo $IP "  " $HOST_NAME.$DOMAIN_NAME $HOST_NAME >> $TEMP_HOST_FILE
+	MACADDR=`docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.MacAddress}}{{end}}' $INSTANCE_NAME`
+	echo "arp -s $IP $MACADDR" >> /tmp/$USERNAME-$CLUSTER_NAME-tmparptable
 #	echo $IP  $HOST_NAME.$DOMAIN_NAME $HOST_NAME
 }
 
-if [ $# -ne 1 ];then
- echo "Usage:: start_cluster <USERNAME>-<CLUSTERNAME>"
- exit
-fi
-
+__update_arp_table() {
+	for (( i=1; i<=$count ; i++ ))
+	do
+ 		NODNAME=${HST[$i]}
+ 		INSTANCE_NAME=$NODNAME
+ 		while read entry
+  		do
+			docker -H $SWARM_MANAGER:4000 exec $INSTANCE_NAME $entry 2> /dev/null
+  		done < /tmp/$USERNAME-$CLUSTER_NAME-tmparptable
+  	done
+}
 
 __start_services(){
 	echo "Sleeping for 20 seconds, while waiting for Ambari Server to discover the nodes liveliness"
@@ -38,22 +46,32 @@ __start_services(){
 
 
 #set -x
+
+if [ $# -ne 1 ];then
+ echo "Usage:: start_cluster <USERNAME>-<CLUSTERNAME>"
+ exit
+fi
+
 USERNAME_CLUSTERNAME=$1
 
 source /etc/docker-hdp-lab.conf
 
 TEMP_HOST_FILE=/tmp/$USERNAME_CLUSTERNAME-tmphostfile
 CLUSTER_NAME=$(echo $USERNAME_CLUSTERNAME | awk -F "-" '{print $NF}')
-echo $USERNAME_CLUSTERNAME
-
+echo -e "\tStarting Cluster: " $USERNAME_CLUSTERNAME
+USERNAME=$(echo $USERNAME_CLUSTERNAME | awk -F "-" '{print $1}')
 ### Starting the stopped Instances in the cluster and preparing /etc/hosts file on all the nodes again
+rm -f /tmp/$USERNAME-$CLUSTER_NAME-tmparptable
 
+count=0
 echo "127.0.0.1		localhost localhost.localdomain" > $TEMP_HOST_FILE
 for i in $(docker -H $SWARM_MANAGER:4000 ps -a | grep "\/$USERNAME_CLUSTERNAME" | awk -F "/" '{print $NF}')
 do
 	INSTANCE_NAME=$i
+	count=$(($count+1))
+	HST[$count]=`echo $INSTANCE_NAME | awk -F "." '{print $1}'`
 	if (! `docker -H $SWARM_MANAGER:4000 inspect -f {{.State.Running}} $INSTANCE_NAME` )  then
-		echo "Starting: " $INSTANCE_NAME
+		echo -e "\nStarting: " $INSTANCE_NAME
 		__start_instance
 		echo "$INSTANCE_NAME" | grep -q "ambari-server"
 		if [ "$?" -eq 0  ]
@@ -70,6 +88,14 @@ done
 
 sleep 5
 
+set -e
+# capture the MAC address of overlay gateway too
+IPADDR=`docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' overlay-gatewaynode`
+MACADDR=`docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.MacAddress}}{{end}}' overlay-gatewaynode`
+echo "arp -s $IPADDR $MACADDR" >> /tmp/$USERNAME-$CLUSTER_NAME-tmparptable
+set +e
+
+__update_arp_table
 ## Sending the prepared /etc/hosts files to all the nodes in the cluster
 amb_server_restart_flag=0
 for ip in $(docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker -H $SWARM_MANAGER:4000 ps -a | grep $USERNAME_CLUSTERNAME | awk -F "/" '{print $NF}'))
@@ -84,10 +110,9 @@ do
 	  ssh -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip "service ambari-agent restart"
 	fi
 done
+echo -e "\n\tAmbari server IP is :" $AMBARI_SERVER_IP "\n"
 
-echo "ambari server ip is :" $AMBARI_SERVER_IP
-
-__start_services
+#__start_services
 
 
 rm -f $TEMP_HOST_FILE

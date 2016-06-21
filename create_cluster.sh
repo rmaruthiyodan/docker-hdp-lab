@@ -25,7 +25,6 @@ __validate_ambariserver_hostname()
 
 __validate_hostnames() {
 # Function Checks for duplicate hostnames and check if they are valid
-
 for (( i=1; i<=$NUM_OF_NODES; i++ ))
 do
         eval "NODENAME=\${HOST${i}}"
@@ -55,7 +54,100 @@ __validate_clustername() {
 	fi
 }
 
+__update_arp_table() {
+	# first on ambari server
+	INSTANCE_NAME=$USERNAME-$CLUSTERNAME-ambari-server
+	while read entry
+	do
+    	docker -H $SWARM_MANAGER:4000 exec $INSTANCE_NAME $entry 2> /dev/null
+	done < $USERNAME-$CLUSTERNAME-tmparptable
 
+	# For all other nodes
+	for (( i=1; i<=$NUM_OF_NODES; i++ ))
+	do
+ 		eval "NODENAME=\${HOST${i}}"
+ 		INSTANCE_NAME=$USERNAME-$CLUSTERNAME-$NODENAME
+
+ 		while read entry
+  		do
+			docker -H $SWARM_MANAGER:4000 exec $INSTANCE_NAME $entry 2> /dev/null
+  		done < $USERNAME-$CLUSTERNAME-tmparptable
+  	done
+}
+
+__populate_hosts_file() {
+for ip in $(awk '{print $1}' $USERNAME-$CLUSTERNAME-tmphostfile)
+do
+	while ! cat $USERNAME-$CLUSTERNAME-tmphostfile | ssh -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip "cat >> /etc/hosts" 2> /dev/null
+	do
+	 echo "Initialization of " `grep $ip $USERNAME-$CLUSTERNAME-tmphostfile| awk '{print $2}'`  " is taking some time to complete. Waiting for another 5s..."
+	 sleep 5
+	done
+
+done
+# rm -f $USERNAME-$CLUSTERNAME-tmphostfile
+}
+
+__check_ambari_server_portstatus() {
+	loop=0
+	nc $AMBARI_SERVER_IP 8080 < /dev/null
+	while [ $? -eq 1 ]
+	do
+		echo "Sleeping for 10 seconds while waiting for initialization..."
+		sleep 10
+		loop=$(( $loop + 1 ))
+		if [ $loop -eq 10 ]
+		then
+			echo -e "\nThere may be some error with the Ambari-Server connection or service startup..."
+			read -p "Would you like to continue waiting for Ambari-Server to initialize ? [Y/N] : " choice
+			if [ "$choice" != "Y" ] && [ "$choice" != "y" ]
+			then
+				echo -e "\n\tStopping the newly created cluster..."
+				delete_cluster.sh $USERNAME-$CLUSTERNAME -F
+        		exit 1
+			fi	
+		fi
+
+		nc $AMBARI_SERVER_IP 8080 < /dev/null
+	done
+}
+
+__check_ambari_agent_status() {
+
+	for ip in $(awk '{print $1}' $USERNAME-$CLUSTERNAME-tmphostfile)
+	do
+		# Do not run the check on ambari-server node
+		grep $ip $USERNAME-$CLUSTERNAME-tmphostfile | grep -q "ambari-server"
+		if [ "$?" -eq 0 ]
+		then
+			break
+		fi
+
+		loop = 0
+		nc $ip 8670 < /dev/null
+		while [ $? -eq 1 ]
+		do
+			echo "Ambari-agent service on $i is taking some time to initialize. Sleeping for 10s..."
+			sleep 10
+			loop=$(( $loop + 1 ))
+			if [ $loop -eq 10 ]
+			then
+				echo -e "\nThis Node at IP [$i] appears to be too slow to startup..."
+				read -p "Would you like to continue waiting for Ambari-Agent service to initialize ? [Y/N] : " choice
+				if [ "$choice" != "Y" ] && [ "$choice" != "y" ]
+				then
+					echo -e "\n\tStopping the newly created cluster..."
+					delete_cluster.sh $USERNAME-$CLUSTERNAME -F
+        				exit 1
+				fi	
+			fi
+			nc $i 8670 < /dev/null
+		done
+	done
+}
+
+
+## Main
 #set -x
 if [ $# -ne 1 ] || [ ! -f $1 ];then
  echo "Insuffient or Incorrect Arguments"
@@ -71,7 +163,7 @@ if [ ! $USERNAME ] || [ ! $CLUSTERNAME ] || [ ! $CLUSTER_VERSION ] || [ ! $AMBAR
  exit
 fi
 
-if [ $NUM_OF_NODES -ne `grep "HOST[0-9]=" $CLUSTER_PROPERTIES| wc -l` ]
+if [ $NUM_OF_NODES -ne `grep "HOST[0-9]*=" $CLUSTER_PROPERTIES| wc -l` ]
 then
   echo -e "\tNUM_OF_NODES in the cluster properties file does not match the defined hosts"
   exit
@@ -89,59 +181,58 @@ IMAGE=hdp/ambari-server-$AMBARIVERSION
 
 
 # Create Ambari-server instance
+echo "Starting: " $NODENAME
 __create_instance
 sleep 2
 IPADDR=$(docker -H $SWARM_MANAGER:4000 inspect $INSTANCE_NAME  |  grep -i "ipaddress" | grep 10 |xargs |awk -F ' |,' '{print $2}')
 echo $IPADDR   $NODENAME > $USERNAME-$CLUSTERNAME-tmphostfile
+MACADDR=`docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.MacAddress}}{{end}}' $INSTANCE_NAME`
+echo "arp -s $IPADDR $MACADDR" > $USERNAME-$CLUSTERNAME-tmparptable
 
 # To create remaining Nodes:
-
 IMAGE=hdp/ambari-agent-$AMBARIVERSION
 
 for (( i=1; i<=$NUM_OF_NODES; i++ ))
 do
 	eval "NODENAME=\${HOST${i}}"
-        INSTANCE_NAME=$USERNAME-$CLUSTERNAME-$NODENAME
+    	INSTANCE_NAME=$USERNAME-$CLUSTERNAME-$NODENAME
+	S_NODENAME=$NODENAME
 	NODENAME=$NODENAME.$DOMAIN_NAME
-	echo $NODENAME
-        __create_instance
+	echo "Starting: " $NODENAME
+    __create_instance
+
 	IPADDR=$(docker -H $SWARM_MANAGER:4000 inspect $INSTANCE_NAME  |  grep -i "ipaddress" | grep 10 |xargs |awk -F ' |,' '{print $2}')
-	echo $IPADDR   $NODENAME >> $USERNAME-$CLUSTERNAME-tmphostfile
+	echo $IPADDR   $NODENAME  $S_NODENAME >> $USERNAME-$CLUSTERNAME-tmphostfile
+
+	MACADDR=`docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.MacAddress}}{{end}}' $INSTANCE_NAME`
+	echo "arp -s $IPADDR $MACADDR" >> $USERNAME-$CLUSTERNAME-tmparptable
+
 done
 #sleep 5
-for ip in $(awk '{print $1}' $USERNAME-$CLUSTERNAME-tmphostfile)
-do
-	while ! cat $USERNAME-$CLUSTERNAME-tmphostfile | ssh -o ConnectTimeout=4 -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip "cat >> /etc/hosts"
-	do
-	 echo "Initialization of [" `grep $ip $USERNAME-$CLUSTERNAME-tmphostfile| awk '{print $2}'`  "] is taking some time to complete.. waiting for another 5s"
-	 sleep 5
-	done
 
-done
-rm -f $USERNAME-$CLUSTERNAME-tmphostfile
+set -e
+# capture the MAC address of overlay gateway too
+IPADDR=`docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' overlay-gatewaynode`
+MACADDR=`docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.MacAddress}}{{end}}' overlay-gatewaynode`
+echo "arp -s $IPADDR $MACADDR" >> $USERNAME-$CLUSTERNAME-tmparptable
+set +e
+
+### Update ARP table on all the nodes
+
+__update_arp_table
+
+__populate_hosts_file
+
 AMBARI_SERVER_IP=$(docker -H $SWARM_MANAGER:4000 inspect $USERNAME-$CLUSTERNAME-ambari-server  |  grep -i "ipaddress" | grep 10 |xargs |awk -F ' |,' '{print $2}')
-echo "Ambari Server IP" $AMBARI_SERVER_IP
+echo -e "\nAmbari Server IP is: $AMBARI_SERVER_IP"
 
-loop=0
-nc $AMBARI_SERVER_IP 8080 < /dev/null
-while [ $? -eq 1 ]
-do
-	echo "Sleeping for 10 seconds while waiting for initialization..."
-	sleep 10
-	loop=$(( $loop + 1 ))
-	if [ $loop -eq 10 ]
-	then
-		echo -e "\nThere may be some error with the Ambari-Server connection or service startup..."
-		read -p "Would you like to continue waiting for Ambari-Server to initialize ? [Y/N] : " choice
-		if [ "$choice" != "Y" ] && [ "$choice" != "y" ]
-		then
-			echo -e "\n\tStopping the newly created cluster..."
-			delete_cluster.sh $USERNAME-$CLUSTERNAME
-        		exit 1
-		fi	
-	fi
+echo -e "\n\tChecking if $AMBARI_SERVER_IP:8080 is reachable\n"
+__check_ambari_server_portstatus
 
-	nc $AMBARI_SERVER_IP 8080 < /dev/null
-done
-sleep 25
+echo -e "\n\tChecking if Ambari-Agents have started\n"
+__check_ambari_agent_status
+
+
+rm -f $USERNAME-$CLUSTERNAME-tmphostfile
+sleep 20
 generate_json.sh $CLUSTER_PROPERTIES $AMBARI_SERVER_IP
