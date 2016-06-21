@@ -28,6 +28,17 @@ __validate_hostnames() {
 for (( i=1; i<=$NUM_OF_NODES; i++ ))
 do
         eval "NODENAME=\${HOST${i}}"
+	existing_node=$(docker -H $SWARM_MANAGER:4000 ps -a | grep $NODENAME | awk -F "/" '{print $NF}')
+	if [ ! -z $existing_node ]
+	then
+		existing_node_fqdn=$(echo $existing_node | cut -d "-" -f 3-).$(docker -H $SWARM_MANAGER:4000 inspect --format='{{.Config.Domainname}}' $existing_node)
+		if [ "$existing_node_fqdn" == "$NODENAME.$DOMAIN_NAME" ]
+		then
+			echo -e "\t $(tput setaf 1) An instance already exists in this environment, with the name: [" $NODENAME.$DOMAIN_NAME "] Please use unique hostnames...$(tput sgr 0)\n"
+			exit 1
+		fi	
+	fi
+
         NODENAME=$NODENAME.$DOMAIN_NAME
 	IP=$(getent hosts $NODENAME)
 	if [  $? -eq 0 ]; then
