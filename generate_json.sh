@@ -56,20 +56,20 @@ echo "{
 clustermap()
 {
 #Start of function
-LAST_HST_NAME=`grep HOST[0-9] $LOC/$PROPS|grep -v SERVICES|tail -1|cut -d'=' -f1`
+LAST_HST_NAME=`grep 'HOST[0-9]*' $LOC/$PROPS|grep -v SERVICES|tail -1|cut -d'=' -f1`
 
 echo "{
   \"configurations\" : [ ],
   \"host_groups\" : ["
 
-for HOST in `grep -w HOST[0-9] $LOC/$PROPS|tr '\n' ' '`
+for HOST in `grep -w 'HOST[0-9]*' $LOC/$PROPS|tr '\n' ' '`
 do
    HST_NAME_VAR=`echo $HOST|cut -d'=' -f1`
    echo "{
       \"name\" : \"`grep $HST_NAME_VAR $PROPS |head -1|cut -d'=' -f2|cut -d'.' -f1`\",
       \"components\" : ["
-		LAST_SVC=`grep SERVICES $LOC/$PROPS|grep $HST_NAME_VAR|cut -d'=' -f2|tr ',' ' '|rev|cut -d' ' -f1|rev|cut -d'"' -f1`
-		for SVC in `grep SERVICES $LOC/$PROPS|grep $HST_NAME_VAR|cut -d'=' -f2|tr ',' ' '|cut -d'"' -f2|cut -d'"' -f1`
+		LAST_SVC=`grep $HST_NAME_VAR"_SERVICES" $LOC/$PROPS|cut -d'=' -f2|tr ',' ' '|rev|cut -d' ' -f1|rev|cut -d'"' -f1`
+		for SVC in `grep $HST_NAME_VAR"_SERVICES" $LOC/$PROPS|cut -d'=' -f2|tr ',' ' '|cut -d'"' -f2|cut -d'"' -f1`
 		do
         		echo "{
 			\"name\" : \"$SVC\""
