@@ -21,7 +21,7 @@ else
 fi
 
 echo "Enter Altair's root password when prompted"
-TUN_INT_NW=`ssh root@$SWARM_MANAGER_IP /opt/docker_cluster/free_tunip $USER $LOCAL_IP`
+TUN_INT_NW=`ssh root@$SWARM_MANAGER_IP /opt/docker_cluster/free_tunip.sh $USER $LOCAL_IP`
 TUN_INT_IP_OTHER="$TUN_INT_NW.1"
 TUN_INT_IP="$TUN_INT_NW.2"
 
