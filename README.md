@@ -62,12 +62,19 @@ Repeat these steps for all the Docker Host Machines-
 *8. Run the "install" command:
 
 	# cd docker-hdp-lab
-	# ./install.sh
-  (this  will install and configure docker-engine, and sets up & starts the Docker Swarm Cluster)
+	# ./install.sh  
+	
+>Run the install.sh command first on the node that will act as SWARM Manager Node, and then on LocalRepository server and others.  
+
+The "install.sh" script mainly does the following activities:  
+ a) Installs and configures docker-engine  
+ b) Starts consul, swarm manager and swarm join containers  
+ c) Creates overlay network, creates a Gateway Container and sets up required routing on each docker-host.  
+ d) Enables and starts the systemd service: "docker-hdp-lab.service:"  
 
 -------
 
-##### At this Stage the setup is completed and let's start using it...
+##### At this Stage, the setup is completed and let's start using it...
 
 
 *9. To start with, prepare the Ambari images using public repo (or using a local repo, as given in step 10)  
@@ -91,18 +98,26 @@ For this, go to the Server desginated for LocalRepository and run -
 	
 	And use the localrepo location to build the Ambari images locally:
 	# source /etc/docker-hdp-lab.conf
-	# nohup build_image.sh 2.2.2.0 http://$LOCAL_REPO_NODE/AMBARI-2.2.1.0/centos6/2.2.1.0-161/  &
+	# nohup build_image.sh 2.2.2.0 http://$LOCAL_REPO_NODE/AMBARI-2.2.2.0/centos6/2.2.2.0-460/  &  
+
+  
+*11. On the LocalRepository server, download and prepare Local HDP Repository for all the required versions  
+  
+	# localize_hdp.sh add <HDP_VERSION> <HDP Tarball URL>
+	Example::  
+	# nohup localize_hdp.sh 2.4.2.0 http://public-repo-1.hortonworks.com/HDP/centos6/2.x/updates/2.4.2.0/HDP-2.4.2.0-centos6-rpm.tar.gz > /tmp/hdp_2420.out 2>&1 &
+	(And then monitor the file: /tmp/hdp_2420.out for progress)  
   
   
-*11. Edit cluster.props file and create your first cluster:
+*12. Edit cluster.props file and create your first cluster:
 
 	# mkdir ~/<username>
 	# cp cluster.props  ~/<username>/  ;  cd  ~/<username>  -- And edit the file
 	# create_cluster.sh cluster.props
-To make the deployment even more faster, use local HDP repositories and specify their location inside "cluster.props" file
+To make the deployment faster, use only local HDP repositories and specify their location inside "cluster.props" file
   
   
-*12. To see the list of Nodes & their IPs in your cluster run either of the below commands:
+*13. To see the list of Nodes & their IPs in your cluster run either of the below commands:
 
 	# show_cluster.sh all
 
@@ -111,7 +126,7 @@ To make the deployment even more faster, use local HDP repositories and specify 
 	# show_cluster.sh <username>  
 	
   	
-*13. Add route on your laptop/desktop to reach the Instance IPs directly, so that UIs such as Ambari or RM/NN UI can be opened in the local browser
+*14. Add route on your laptop/desktop to reach the Instance IPs directly, so that UIs such as Ambari or RM/NN UI can be opened in the local browser
 
 	Example: # route add -net 10.0.5.0/24 $SWARM_MANAGER_IP  
 	Or 
@@ -119,7 +134,7 @@ To make the deployment even more faster, use local HDP repositories and specify 
 	& use the broswer to open Ambari UI at http://127.0.0.1:8080
   
   
-*14. Start using the scripts such as "start_cluster", "stop_cluster", "delete_cluster" and others to manage HDP clusters.  
+*15. Start using the scripts such as "start_cluster", "stop_cluster", "delete_cluster" and others to manage HDP clusters.  
   
 Instructions on How to Manage HDP Clusters inside the Docker-HDP-Lab Cluster is given at: https://github.com/rmaruthiyodan/docker-hdp-lab/wiki/Managing-HDP-Clusters-in-the-docker-hdp-lab-Cluster
 
