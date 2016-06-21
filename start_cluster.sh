@@ -64,6 +64,8 @@ USERNAME=$(echo $USERNAME_CLUSTERNAME | awk -F "-" '{print $1}')
 rm -f /tmp/$USERNAME-$CLUSTER_NAME-tmparptable
 
 count=0
+amb_server_restart_flag=0
+
 echo "127.0.0.1		localhost localhost.localdomain" > $TEMP_HOST_FILE
 for i in $(docker -H $SWARM_MANAGER:4000 ps -a | grep "\/$USERNAME_CLUSTERNAME" | awk -F "/" '{print $NF}')
 do
@@ -97,17 +99,18 @@ set +e
 
 __update_arp_table
 ## Sending the prepared /etc/hosts files to all the nodes in the cluster
-amb_server_restart_flag=0
 for ip in $(docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker -H $SWARM_MANAGER:4000 ps -a | grep $USERNAME_CLUSTERNAME | awk -F "/" '{print $NF}'))
 do
-        while ! cat $TEMP_HOST_FILE | ssh -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip "cat > /etc/hosts"
+	echo -e "\tPopulating /etc/hosts on $ip"
+        while ! cat $TEMP_HOST_FILE | ssh -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip "cat > /etc/hosts" >/dev/null 2>&1
         do
          echo "Initialization of [" `grep $ip $TEMP_HOST_FILE| awk '{print $2}'` "] is taking a bit long to complete.. waiting for another 5s"
          sleep 5
         done
 	if [ "$amb_server_restart_flag" -eq 1 ]
 	then
-	  ssh -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip "service ambari-agent restart"
+	  echo -e "\n\tRestarting Ambari-agent on : $ip"
+	  ssh -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip "service ambari-agent restart" >/dev/null 2>&1
 	fi
 done
 echo -e "\n\tAmbari server IP is :" $AMBARI_SERVER_IP "\n"
