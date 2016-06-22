@@ -1,0 +1,18 @@
+Building docker image for ambari-server-2.2.1.1...
+docker: "build" requires 1 argument.
+See 'docker build --help'.
+
+Usage:	docker build [OPTIONS] PATH | URL | -
+
+Build an image from a Dockerfile
+Saving image ambari-server-2.2.1.1.tar ...
+Error response from daemon: digest not found
+Building docker image for ambari-agent-2.2.1.1...
+docker: "build" requires 1 argument.
+See 'docker build --help'.
+
+Usage:	docker build [OPTIONS] PATH | URL | -
+
+Build an image from a Dockerfile
+Saving image ambari-agent-2.2.1.1.tar ...
+Error response from daemon: digest not found

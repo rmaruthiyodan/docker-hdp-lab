@@ -1,0 +1,12 @@
+[Unit]
+Description=Docker HDP Lab Cluster
+After=docker.service
+
+[Service]
+Type=notify
+ExecStart=/opt/docker_cluster/docker-hdp-lab_service.sh start
+ExecStop=/opt/docker_cluster/docker-hdp-lab_service.sh stop
+RemainAfterExit=True
+
+[Install]
+WantedBy=multi-user.target
