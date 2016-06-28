@@ -179,7 +179,7 @@ EOF
 	route add -net $OVERLAY_NETWORK gw $OVERLAY_GATEWAY_IP
 	set -e
 else
-        docker run -d swarm join --advertise=$LOCAL_IP:2375 consul://$CONSUL_MANAGER:8500
+        docker run -d  --name=swarm_join swarm join --advertise=$LOCAL_IP:2375 consul://$CONSUL_MANAGER:8500
 	if [ $(route -n | grep -q $(echo $OVERLAY_NETWORK | awk -F "/" '{print $1}')) ]
  	then
 	    route add -net $OVERLAY_NETWORK gw $SWARM_MANAGER_IP
