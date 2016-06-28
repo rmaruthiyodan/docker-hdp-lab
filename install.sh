@@ -187,7 +187,7 @@ else
 
 fi
 
-if [ $LOCAL_REPO_NODE == $HOSTNAME  ]
+if [ $LOCAL_REPO_NODE == $HOSTNAME  ] ||  [ $LOCAL_REPO_NODE == `hostname -s`  ] ||  [ $LOCAL_REPO_NODE == `hostname -f`  ]
 then
 	if [ ! -d /var/www/html/repo ]
 	then
