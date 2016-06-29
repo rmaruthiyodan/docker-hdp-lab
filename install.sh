@@ -112,12 +112,13 @@ yum install -y docker-engine
 
 set +e
 systemctl enable docker
-set -e
+
 
 sed -i "/ExecStart=/c\ExecStart=\/usr\/bin\/docker daemon -H tcp\:\/\/$LOCAL_IP:2375  -H unix:\/\/\/var\/run\/docker.sock --cluster-store=consul\:\/\/$CONSUL_MANAGER:8500 --cluster-advertise=$LOCAL_IP\:2375" /etc/systemd/system/multi-user.target.wants/docker.service
 sed -i "/ExecStart=/c\ExecStart=\/usr\/bin\/docker daemon -H tcp\:\/\/$LOCAL_IP:2375  -H unix:\/\/\/var\/run\/docker.sock --cluster-store=consul\:\/\/$CONSUL_MANAGER:8500 --cluster-advertise=$LOCAL_IP\:2375" /usr/lib/systemd/system/docker.service
 systemctl daemon-reload
-service docker start
+service docker restart
+set -e
 
 sleep 5
 if [ $SWARM_MANAGER == $HOSTNAME ] || [ $SWARM_MANAGER == `hostname -s` ] || [ $SWARM_MANAGER == `hostname -f` ]
