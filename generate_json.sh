@@ -139,7 +139,9 @@ installhdp()
 {
 #Install hdp using Ambari Blueprints
 
-HDP_UTILS_VERSION=`echo $BASE_URL_UTILS|cut -d'/' -f5`
+#HDP_UTILS_VERSION=`echo $BASE_URL_UTILS|cut -d'/' -f5`
+pos=$(expr index "$BASE_URL_UTILS" HDP-UTILS)
+HDP_UTILS_VERSION=`echo ${BASE_URL_UTILS:$(($pos-1))} | cut -d "/" -f1`
 
 curl -H "X-Requested-By: ambari" -X POST -u admin:admin http://$AMBARI_HOST:8080/api/v1/blueprints/$CLUSTERNAME -d @"$LOC"/cluster_config.json
 sleep 1
