@@ -174,10 +174,14 @@ if [ ! $USERNAME ] || [ ! $CLUSTERNAME ] || [ ! $CLUSTER_VERSION ] || [ ! $AMBAR
  exit
 fi
 
-if [ $NUM_OF_NODES -ne `grep "HOST[0-9]*=" $CLUSTER_PROPERTIES| wc -l` ]
+if [ "$NUM_OF_NODES" -ne `grep "HOST[0-9]*=" $CLUSTER_PROPERTIES| wc -l` ]
 then
-  echo -e "\tNUM_OF_NODES in the cluster properties file does not match the defined hosts"
-  exit
+  echo -e "\n\tNUM_OF_NODES in the cluster properties file does not match the defined hosts. Exiting.\n"
+  exit 1
+elif [ "$NUM_OF_NODES" -ne `grep "HOST[0-9]*_SERVICE" $CLUSTER_PROPERTIES | wc -l` ]
+then
+  echo -e "\n\tNUM_NODES in the cluster properties file does not match the HOST_x_SERVICES defined. Exiting.\n"
+  exit 1
 fi
 
 source /etc/docker-hdp-lab.conf

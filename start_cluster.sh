@@ -14,20 +14,19 @@ __populate_hostsfile(){
 	HOST_NAME=`docker -H $SWARM_MANAGER:4000 inspect --format='{{.Config.Hostname}}' $INSTANCE_NAME`
 	DOMAIN_NAME=`docker -H $SWARM_MANAGER:4000 inspect --format='{{.Config.Domainname}}' $INSTANCE_NAME`
 	if [ ! -z "$DOMAIN_NAME" ]
-        then
-                echo $IP "  " $HOST_NAME.$DOMAIN_NAME $HOST_NAME >> $TEMP_HOST_FILE
-        else
-                S_HOSTNAME=`echo $HOST_NAME | awk -F "." '{print $1}'`
-                echo $IP "  " $HOST_NAME $S_HOSTNAME >> $TEMP_HOST_FILE
-        fi        
-	echo $IP "  " $HOST_NAME.$DOMAIN_NAME $HOST_NAME >> $TEMP_HOST_FILE
+	then 
+		echo $IP "  " $HOST_NAME.$DOMAIN_NAME $HOST_NAME >> $TEMP_HOST_FILE
+	else
+		S_HOSTNAME=`echo $HOST_NAME | awk -F "." '{print $1}'`
+		echo $IP "  " $HOST_NAME $S_HOSTNAME >> $TEMP_HOST_FILE
+	fi
 	MACADDR=`docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.MacAddress}}{{end}}' $INSTANCE_NAME`
 	echo "arp -s $IP $MACADDR" >> /tmp/$USERNAME-$CLUSTER_NAME-tmparptable
 #	echo $IP  $HOST_NAME.$DOMAIN_NAME $HOST_NAME
 }
 
 __update_arp_table() {
-	for (( i=1; i<=$count ; i++ ))
+	for (( i=1; i<=$node_count ; i++ ))
 	do
  		NODNAME=${HST[$i]}
  		INSTANCE_NAME=$NODNAME
@@ -70,16 +69,18 @@ USERNAME=$(echo $USERNAME_CLUSTERNAME | awk -F "-" '{print $1}')
 ### Starting the stopped Instances in the cluster and preparing /etc/hosts file on all the nodes again
 rm -f /tmp/$USERNAME-$CLUSTER_NAME-tmparptable
 
-count=0
+node_count=0
 amb_server_restart_flag=0
 
 echo "127.0.0.1		localhost localhost.localdomain" > $TEMP_HOST_FILE
 for i in $(docker -H $SWARM_MANAGER:4000 ps -a | grep "\/$USERNAME_CLUSTERNAME" | awk -F "/" '{print $NF}')
 do
 	INSTANCE_NAME=$i
-	count=$(($count+1))
-	HST[$count]=`echo $INSTANCE_NAME | awk -F "." '{print $1}'`
+	node_count=$(($node_count+1))
+	HOST_AMBAGENT_RESTART[$node_count]=1
+	HST[$node_count]=`echo $INSTANCE_NAME | awk -F "." '{print $1}'`
 	if (! `docker -H $SWARM_MANAGER:4000 inspect -f {{.State.Running}} $INSTANCE_NAME` )  then
+		HOST_AMBAGENT_RESTART[$node_count]=0
 		echo -e "\nStarting: " $INSTANCE_NAME
 		__start_instance
 		echo "$INSTANCE_NAME" | grep -q "ambari-server"
@@ -105,6 +106,9 @@ echo "arp -s $IPADDR $MACADDR" >> /tmp/$USERNAME-$CLUSTER_NAME-tmparptable
 set +e
 
 __update_arp_table
+
+counter=1
+echo  ""
 ## Sending the prepared /etc/hosts files to all the nodes in the cluster
 for ip in $(docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker -H $SWARM_MANAGER:4000 ps -a | grep $USERNAME_CLUSTERNAME | awk -F "/" '{print $NF}'))
 do
@@ -114,15 +118,16 @@ do
          echo "Initialization of [" `grep $ip $TEMP_HOST_FILE| awk '{print $2}'` "] is taking a bit long to complete.. waiting for another 5s"
          sleep 5
         done
-	if [ "$amb_server_restart_flag" -eq 1 ]
+	if [ "$amb_server_restart_flag" -eq 1 ] && [ "${HOST_AMBAGENT_RESTART[$counter]}" -ne 0 ]
 	then
-	  echo -e "\n\tRestarting Ambari-agent on : $ip"
+	  echo -e "\tRestarting Ambari-agent on : $ip \n"
 	  ssh -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip "service ambari-agent restart" >/dev/null 2>&1
 	fi
+	counter=$(($counter+1))
 done
 echo -e "\n\tAmbari server IP is :" $AMBARI_SERVER_IP "\n"
 
 #__start_services
 
 
-rm -f $TEMP_HOST_FILE
+#rm -f $TEMP_HOST_FILE
