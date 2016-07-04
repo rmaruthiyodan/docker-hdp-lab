@@ -18,9 +18,9 @@ __print_cluster_info() {
 			if [  "$(docker -H $SWARM_MANAGER:4000 inspect -f {{.State.Running}} $INSTANCE_NAME)" == "false" ]; then 
 			  IP="(OFFLINE)"
 			  FQDN=$node_name
-			  CPU=""
-			  MEM=""
-			  MEM_UNIT=""
+			  CPU="0"
+			  MEM="0"
+			  MEM_UNIT="-"
 			else	
 			  IP=`docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $INSTANCE_NAME`
 	        	  HOST_NAME=`docker -H $SWARM_MANAGER:4000 inspect --format='{{.Config.Hostname}}' $INSTANCE_NAME`
@@ -33,7 +33,7 @@ __print_cluster_info() {
 			  #IPADDR=$(docker -H $SWARM_MANAGER:4000 inspect INSTANCE_NAME | grep -i  "ipaddress" | grep 10 | xargs)
 			fi
  		#	echo -e "\t \t $(tput setaf 2) $FQDN  -->    $IP $(tput sgr 0)"
-			if [ $MEM_UNIT == "GB" ] && (( $(echo "$MEM" \> 5 | bc -l) ))
+			if [ "$MEM_UNIT" == "GB" ] && (( $(echo "$MEM" \> 5 | bc -l) ))
 			then
 				if (( $(echo `echo "$CPU"| cut -d "%" -f1` \> 70 | bc -l) ))
 				then
