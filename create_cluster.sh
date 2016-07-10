@@ -12,6 +12,34 @@ docker -H $SWARM_MANAGER:4000 run -d --hostname $NODENAME --name $INSTANCE_NAME 
 
 }
 
+__set_lifetime() {
+        sudo sed -i "/$USERNAME-$CLUSTERNAME/d" $CLUSTER_LIFETIME_FILE
+        echo $USERNAME-$CLUSTERNAME $(date -d '+6 hour' "+%s") | $tee_cmd -a $CLUSTER_LIFETIME_FILE > /dev/null
+        echo -e "\tCluster Lease is till: $(date -d '+6 hour') \n"
+}
+
+__resource_check() {
+for (( i=1;i<=$NUM_OF_DOCKER_HOSTS;i++ ))
+do
+	eval "dh=\${DOCKER_HOST${i}}"
+	ssh_options="-o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=5"
+        read free cache <<< $($ssh_cmd $sh_options $dh "cat /proc/meminfo" 2> /dev/null | egrep "MemFree|Cached" | head -n2 | awk '{print $2}')
+	if [ $? -ne 0 ]
+	then
+		break
+	fi
+        free_memory=$(( ($free + $cache)/1024/1024 ))
+        if [ $free_memory -lt 5 ]
+        then
+            echo -e "\n$(tput setaf 1)The Docker Host [ $dh ] is running with less than 5GiB of Free memory"
+            echo -e "Failed to create the Cluster since one Docker Host is running with very less free memory at this time$(tput sgr 0)\n"
+            exit 1
+        fi
+        #echo "Free Mem on $dh: " $free_memory
+done
+
+}
+
 __validate_ambariserver_hostname()
 {
 	IP=$(getent hosts $CLUSTERNAME-ambari-server.$DOMAIN_NAME)
@@ -89,7 +117,7 @@ __update_arp_table() {
 __populate_hosts_file() {
 for ip in $(awk '{print $1}' $USERNAME-$CLUSTERNAME-tmphostfile)
 do
-	while ! cat $USERNAME-$CLUSTERNAME-tmphostfile | ssh -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip "cat >> /etc/hosts" 2> /dev/null
+	while ! cat $USERNAME-$CLUSTERNAME-tmphostfile | $ssh_cmd -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip "cat >> /etc/hosts" 2> /dev/null
 	do
 	 echo "Initialization of " `grep $ip $USERNAME-$CLUSTERNAME-tmphostfile| awk '{print $2}'`  " is taking some time to complete. Waiting for another 5s..."
 	 sleep 5
@@ -185,6 +213,18 @@ then
 fi
 
 source /etc/docker-hdp-lab.conf
+
+if [ "$USER" != "root" ]
+then
+        export ssh_cmd="sudo /bin/ssh"
+        export tee_cmd="sudo tee"
+else
+        export ssh_cmd="/bin/ssh"
+        export tee_cmd="tee"
+fi
+
+
+__resource_check
 # Validate the hostnames and find duplicates
 __validate_hostnames
 __validate_clustername
@@ -249,5 +289,9 @@ __check_ambari_agent_status
 
 
 rm -f $USERNAME-$CLUSTERNAME-tmphostfile
+
+CLUSTER_LIFETIME_FILE=/opt/docker_cluster/cluster_lease
+__set_lifetime
+
 sleep 20
 generate_json.sh $CLUSTER_PROPERTIES $AMBARI_SERVER_IP

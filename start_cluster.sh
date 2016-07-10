@@ -9,6 +9,29 @@ __start_instance(){
 	docker -H $SWARM_MANAGER:4000 start $INSTANCE_NAME
 }
 
+__set_lifetime() {
+	sudo sed -i "/$USERNAME_CLUSTERNAME/d" /opt/docker_cluster/cluster_lease
+	echo $USERNAME_CLUSTERNAME $(date -d '+6 hour' "+%s") | $tee_cmd -a $CLUSTER_LIFETIME_FILE
+	echo -e "\tCluster Lease is till: $(date -d '+6 hour') \n"
+}
+
+__resource_check() {
+
+for dh in $(docker -H $SWARM_MANAGER:4000 ps -a | grep "\/$USERNAME_CLUSTERNAME" | awk '{print $NF}' | awk -F "/" '{print $1}' | sort -u)
+do
+	ssh_options="-o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no -o ConnectTimeout=5"
+	read free cache <<< $($ssh_cmd $ssh_options $dh "cat /proc/meminfo" 2> /dev/null | egrep "MemFree|Cached" | head -n2 | awk '{print $2}')
+	free_memory=$(( ($free + $cache)/1024/1024 ))
+	if [ $free_memory -lt 5 ]
+	then
+	    echo -e "\n$(tput setaf 1)Atleast one Instance in this cluster is present on [$dh]. And the Docker Host is running with less than 5GiB of Free memory"
+	    echo -e "\tCannot Start the Cluster since Docker Host is running with very less free memory at this time$(tput sgr 0)\n"
+	    exit 1
+	fi
+	#echo "Free Mem on $dh: " $free_memory
+done
+
+}
 __populate_hostsfile(){
 	IP=`docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $INSTANCE_NAME`
 	HOST_NAME=`docker -H $SWARM_MANAGER:4000 inspect --format='{{.Config.Hostname}}' $INSTANCE_NAME`
@@ -69,6 +92,17 @@ USERNAME=$(echo $USERNAME_CLUSTERNAME | awk -F "-" '{print $1}')
 ### Starting the stopped Instances in the cluster and preparing /etc/hosts file on all the nodes again
 rm -f /tmp/$USERNAME-$CLUSTER_NAME-tmparptable
 
+
+if [ "$USER" != "root" ]
+then
+	export ssh_cmd="sudo /bin/ssh"
+	export tee_cmd="sudo tee"
+else
+	export ssh_cmd="/bin/ssh"
+	export tee_cmd="tee"
+fi
+
+__resource_check
 node_count=0
 amb_server_restart_flag=0
 
@@ -113,7 +147,7 @@ echo  ""
 for ip in $(docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $(docker -H $SWARM_MANAGER:4000 ps -a | grep $USERNAME_CLUSTERNAME | awk -F "/" '{print $NF}'))
 do
 	echo -e "\tPopulating /etc/hosts on $ip"
-        while ! cat $TEMP_HOST_FILE | ssh -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip "cat > /etc/hosts" >/dev/null 2>&1
+        while ! cat $TEMP_HOST_FILE | $ssh_cmd  -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip "cat > /etc/hosts" >/dev/null 2>&1
         do
          echo "Initialization of [" `grep $ip $TEMP_HOST_FILE| awk '{print $2}'` "] is taking a bit long to complete.. waiting for another 5s"
          sleep 5
@@ -121,12 +155,14 @@ do
 	if [ "$amb_server_restart_flag" -eq 1 ] && [ "${HOST_AMBAGENT_RESTART[$counter]}" -ne 0 ]
 	then
 	  echo -e "\tRestarting Ambari-agent on : $ip \n"
-	  ssh -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip "service ambari-agent restart" >/dev/null 2>&1
+	  $ssh_cmd -o CheckHostIP=no -o UserKnownHostsFile=/dev/null -o StrictHostKeyChecking=no root@$ip "service ambari-agent restart" >/dev/null 2>&1
 	fi
 	counter=$(($counter+1))
 done
 echo -e "\n\tAmbari server IP is :" $AMBARI_SERVER_IP "\n"
 
+CLUSTER_LIFETIME_FILE=/opt/docker_cluster/cluster_lease
+__set_lifetime
 #__start_services
 
 
