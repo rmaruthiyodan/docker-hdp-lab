@@ -59,7 +59,7 @@ rm -f ambari-server-template/id_rsa*
 cp  /root/.ssh/id_rsa* ambari-agent-template/
 cp  /root/.ssh/id_rsa* ambari-server-template/
 
-yum install -y nc wget net-tools
+yum install -y nc wget net-tools bc
 yum update -y
 
 echo -e "\nPlease Restart the node if there were kernel updates applied. Some of the features require later versions of kernel"
