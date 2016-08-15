@@ -7,8 +7,8 @@
 
 VPN_INT='utun0'
 TUN_INT='gif0'
-SWARM_MANAGER='altair'
-SWARM_MANAGER_IP='10.200.8.31'
+SWARM_MANAGER='maggie-cluster-n1.openstacklocal'
+SWARM_MANAGER_IP='172.26.64.100'
 DOCKER_INT_NW='10.0.1.0/24'
 
 ifconfig | grep -q $VPN_INT
@@ -20,7 +20,7 @@ else
         LOCAL_IP=$(ifconfig $LOCAL_INT | grep "inet " | awk '{print $2}')
 fi
 
-echo "Enter Altair's root password when prompted"
+echo "Enter $SWARM_MANAGER's root password when prompted"
 TUN_INT_NW=`ssh root@$SWARM_MANAGER_IP /opt/docker_cluster/free_tunip.sh $USER $LOCAL_IP`
 TUN_INT_IP_OTHER="$TUN_INT_NW.1"
 TUN_INT_IP="$TUN_INT_NW.2"
