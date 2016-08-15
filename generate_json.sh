@@ -108,6 +108,10 @@ repobuilder()
 #Start of function
 BASE_URL=`grep $CLUSTER_VERSION $LOC/$PROPS|grep BASE|cut -d'=' -f2|sed -e 's/^"//'  -e 's/"$//'|sort -n|tail -1`
 
+if [ -z "$BASE_URL" ]
+then
+	BASE_URL=`grep $CLUSTER_VERSION /opt/docker_cluster/local_repo |grep BASE|cut -d'=' -f2|sed -e 's/^"//'  -e 's/"$//'|sort -n|tail -1`
+fi
 echo "{
 \"Repositories\" : {
    \"base_url\" : \"$BASE_URL\",
@@ -116,6 +120,12 @@ echo "{
 }" > $LOC/repo.json
 
 BASE_URL_UTILS=`grep UTILS $LOC/$PROPS|cut -d'=' -f2|sed -e 's/^"//'  -e 's/"$//'|sort -n|tail -1`
+
+if [ -z "$BASE_URL_UTILS" ]
+then
+	BASE_URL_URILS=`grep UTILS /opt/docker_cluster/local_repo |cut -d'=' -f2|sed -e 's/^"//'  -e 's/"$//'|sort -n|tail -1`
+fi
+
 export BASE_URL_UTILS;
 
 echo "{
@@ -139,9 +149,7 @@ installhdp()
 {
 #Install hdp using Ambari Blueprints
 
-#HDP_UTILS_VERSION=`echo $BASE_URL_UTILS|cut -d'/' -f5`
-pos=$(expr index "$BASE_URL_UTILS" HDP-UTILS)
-HDP_UTILS_VERSION=`echo ${BASE_URL_UTILS:$(($pos-1))} | cut -d "/" -f1`
+HDP_UTILS_VERSION=`echo $BASE_URL_UTILS|cut -d'/' -f5`
 
 curl -H "X-Requested-By: ambari" -X POST -u admin:admin http://$AMBARI_HOST:8080/api/v1/blueprints/$CLUSTERNAME -d @"$LOC"/cluster_config.json
 sleep 1
