@@ -28,7 +28,7 @@ __print_cluster_info() {
 
 		printf "%-12s |\e[31m %-25s \e[0m|\e[31m %-40s \e[0m| %-15s | %-5s %-4s | %-7s |\e[0m\n" "" $cluster_name "$lease_time" - - - -
 		version_printed_fl=0
-		for node_name in $(cat $TMP_DOCKER_PS_OUTFILE | grep "\/$USERNAME-" | grep "\-$cluster_name-" | awk -F "/" '{print $NF}' | cut -f 3-8 -d"-")
+		for node_name in $(cat $TMP_DOCKER_PS_OUTFILE | grep "\/$USERNAME-$cluster_name-" | awk -F "/" '{print $NF}' | cut -f 3-8 -d"-")
 		do
 			INSTANCE_NAME=$USERNAME-$cluster_name-$node_name
 			if [  "$(docker -H $SWARM_MANAGER:4000 inspect -f {{.State.Running}} $INSTANCE_NAME)" == "false" ]; then 
