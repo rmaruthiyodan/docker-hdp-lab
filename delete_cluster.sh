@@ -19,16 +19,16 @@ then
   exit
 fi
 
-stop_cluster.sh $1
+stop_cluster $1
 
 if [  "$?" -ne 0 ]
-then
+then	
 	exit
 fi
 
 echo -e " \n----------------------------------------------------------------------------\n\t ****** WARNING !!! ****** \n "
 echo -e "The following instances will be DELETED : \n"
-for i in $(docker -H $SWARM_MANAGER:4000 ps -a | grep $1 | awk -F "/" '{print $NF}')
+for i in $(docker -H $SWARM_MANAGER:4000 ps -a | grep "$1" | awk -F "/" '{print $NF}')
 do
 	echo -e "\t" $i
 done
@@ -36,5 +36,6 @@ echo -e "\n\t"
 read -p "Are you sure ? [Y/N] : " choice
 if [ "$choice" == "Y" ] || [ "$choice" == "y" ]
 then
-	docker -H $SWARM_MANAGER:4000 rm $(docker -H $SWARM_MANAGER:4000 ps -a | grep $1 | awk -F "/" '{print $NF}')
+	docker -H $SWARM_MANAGER:4000 rm $(docker -H $SWARM_MANAGER:4000 ps -a | grep $1 | awk -F "/" '{print $NF}') > /dev/null 2>&1 &
 fi
+echo -e "\n\tDeleting the cluster in the Background. The container deletions would take about a minute to complete\n"

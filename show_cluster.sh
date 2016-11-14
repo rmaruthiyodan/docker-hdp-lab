@@ -18,19 +18,41 @@ __get_hdp_version() {
 
 __print_cluster_info() {
 	#echo $USERNAME
+	clusterversion_file="/opt/docker_cluster/clusterversions"
 	printf "%-12s | %-25s | %-40s | %-15s | %-5s %-4s | %-7s |\n" $USERNAME $junk $junk $junk  $junk $junk
 	for cluster_name in $(cat $TMP_DOCKER_PS_OUTFILE | grep "\/$USERNAME\-" | awk -F "/" '{print $NF}' | cut -f 2 -d"-" | sort | uniq)
 	do
 #		echo -e "\n\t" "$(tput setaf 1)[ $cluster_name ]$(tput sgr 0)"
 		lease_time_epoch=$(cat /opt/docker_cluster/cluster_lease | grep "$USERNAME-$cluster_name" | awk '{print $2}')
 		lease_time=$(date -d "@$lease_time_epoch" +"%Y-%m-%d %H:%M" 2> /dev/null)
-		if [ ! -z "$lease_time" ]; then lease_time="Expires after: "$lease_time ; fi
+		if [ ! -z "$lease_time" ]; then lease_time="-- Expires after: "$lease_time" --"; fi
 
-		printf "%-12s |\e[31m %-25s \e[0m|\e[31m %-40s \e[0m| %-15s | %-5s %-4s | %-7s |\e[0m\n" "" $cluster_name "$lease_time" - - - -
+		printf "%-12s |\e[31m %-25s \e[0m|\e[31m %-40s \e[0m| %-15s | %-5s %-4s | %-7s |\e[0m\n" "" $cluster_name "$lease_time" --------------- ----- ---- -------
 		version_printed_fl=0
 		for node_name in $(cat $TMP_DOCKER_PS_OUTFILE | grep "\/$USERNAME-$cluster_name-" | awk -F "/" '{print $NF}' | cut -f 3-8 -d"-")
 		do
 			INSTANCE_NAME=$USERNAME-$cluster_name-$node_name
+			## ---- to print cluster version ----
+			echo $INSTANCE_NAME | grep -q -i "ambari-server"
+                        if [ "$?" -ne 0 ] && [ "$version_printed_fl" -eq 0 ] && [ "$VERSION_OPTION" -ne 0 ]
+                        then
+				amb_version=`grep "\-$USERNAME-$cluster_name-" $clusterversion_file | awk '{print $2}'`
+                                amb_version="Ambari: $amb_version"
+                                #echo Ambari:$(__get_ambari_version $INSTANCE_NAME)`
+                                hdp_version=`grep "\-$USERNAME-$cluster_name-" $clusterversion_file | awk '{print $3}'`
+                                hdp_version="HDP: $hdp_version"
+                                #echo HDP:$(__get_hdp_version $INSTANCE_NAME)`
+                                print_version=$amb_version
+                                version_printed_fl=2
+                        elif [ "$version_printed_fl" -eq 2 ]
+                        then
+                                print_version=$hdp_version
+                                version_printed_fl=1
+                        else
+                                print_version=" "
+                        fi
+			## ---------  ##
+			##  ---- The info to capture will differ based on the state of nodes. Hence checking that ---- ##
 			if [  "$(docker -H $SWARM_MANAGER:4000 inspect -f {{.State.Running}} $INSTANCE_NAME)" == "false" ]; then 
 			  IP="(OFFLINE)"
 			  FQDN=$node_name
@@ -38,26 +60,11 @@ __print_cluster_info() {
 			  MEM="0"
 			  MEM_UNIT="-"
 			else
-			  echo $INSTANCE_NAME | grep -q -i "ambari-server"
-			  if [ "$?" -ne 0 ] && [ "$version_printed_fl" -eq 0 ] && [ "$VERSION_OPTION" -ne 0 ]
-			  then
-				amb_version=`echo Ambari:$(__get_ambari_version $INSTANCE_NAME)`
-				hdp_version=`echo HDP:$(__get_hdp_version $INSTANCE_NAME)`
-				print_version=$amb_version
-				version_printed_fl=2
-			  elif [ "$version_printed_fl" -eq 2 ]
-			  then
-                                print_version=$hdp_version
-				version_printed_fl=1
-			  else
-				print_version=" "
-                          fi
-
 			  IP=`docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $INSTANCE_NAME`
 	        	  HOST_NAME=`docker -H $SWARM_MANAGER:4000 inspect --format='{{.Config.Hostname}}' $INSTANCE_NAME`
 		          DOMAIN_NAME=`docker -H $SWARM_MANAGER:4000 inspect --format='{{.Config.Domainname}}' $INSTANCE_NAME`
 			  FQDN=$HOST_NAME.$DOMAIN_NAME
-			  INSTANCE_ID=$(grep $INSTANCE_NAME $TMP_DOCKER_PS_OUTFILE | awk '{print $1}')
+			  INSTANCE_ID=$(grep -w $INSTANCE_NAME $TMP_DOCKER_PS_OUTFILE | awk '{print $1}')
 
 			  read CPU MEM MEM_UNIT <<< $(grep $INSTANCE_ID $TMP_DOCKER_STATS_OUTFILE| tail -n1| awk '{print $2 , $3 , $4}')
 			 # docker -H $SWARM_MANAGER:4000 stats --no-stream $INSTANCE_NAME | tail -n1| awk '{print $2 $3 $4}' | read CPU MEM MEM_UNIT 
@@ -87,7 +94,6 @@ __print_cluster_info() {
 }
 
 
-#set -x
 if [ $# -lt 1 ];then
  echo "Usage:: show_cluster.sh < all | username > [online] [version]"
  echo "Displaying cluster for the current user " $USER
@@ -107,13 +113,7 @@ else
 	DOCKER_PS_CMD="docker -H $SWARM_MANAGER:4000 ps -a"
 fi
 
-if [ "$2" == "version" ] || [ "$3" == "version" ]
-then
-	VERSION_OPTION=1
-else
-	VERSION_OPTION=0
-fi
-
+VERSION_OPTION=1
 $DOCKER_PS_CMD > $TMP_DOCKER_PS_OUTFILE
 echo -e "\nObtaining Stats..."
 timeout 3s docker -H $SWARM_MANAGER:4000 stats > $TMP_DOCKER_STATS_OUTFILE
@@ -124,7 +124,7 @@ echo "--------------------------------------------------------------------------
 
 if [ "$USERNAME" == "all" ]; then
 	#DOCKER_PS_CMD="docker -H $SWARM_MANAGER:4000 ps -a"
- 	all_users=$($DOCKER_PS_CMD | grep ambari | awk '{print $NF}' |  cut -f 2 -d "/"| cut -f 1 -d "-"| sort | uniq)
+ 	all_users=$($DOCKER_PS_CMD | grep ambari | awk '{print $NF}' | cut -f 1 -d "-" | cut -f 2 -d "/"| sort | uniq)
 	num_of_users=$(echo $all_users | wc -w)
 	
 	for i in $all_users; do

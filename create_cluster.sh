@@ -94,11 +94,12 @@ __validate_clustername() {
 }
 
 __update_arp_table() {
-	# first on ambari server
+	# first on ambari server & on overlay-gateway node
 	INSTANCE_NAME=$USERNAME-$CLUSTERNAME-ambari-server
 	while read entry
 	do
     	docker -H $SWARM_MANAGER:4000 exec $INSTANCE_NAME $entry 2> /dev/null
+	docker -H $SWARM_MANAGER:4000 exec overlay-gatewaynode $entry 2> /dev/null
 	done < $USERNAME-$CLUSTERNAME-tmparptable
 
 	# For all other nodes
@@ -113,6 +114,21 @@ __update_arp_table() {
   		done < $USERNAME-$CLUSTERNAME-tmparptable
   	done
 }
+
+__populate_clusterversion_file() {
+## Function to update HDP and Ambari version info into the file
+        clusterversion_file="/opt/docker_cluster/clusterversions"
+        AMBARI_VER=$AMBARIVERSION
+        HDP_VER=$CLUSTER_VERSION
+        grep -q "\-$USERNAME-$CLUSTERNAME-" $clusterversion_file
+        if [ $? -eq 0 ]
+        then
+                sed -i "/-$USERNAME-$CLUSTERNAME-/c\-$USERNAME-$CLUSTERNAME- $AMBARI_VER $HDP_VER" $clusterversion_file
+        else
+                echo "-$USERNAME-$CLUSTERNAME- $AMBARI_VER $HDP_VER" >> $clusterversion_file
+        fi
+}
+
 
 __populate_hosts_file() {
 for ip in $(awk '{print $1}' $USERNAME-$CLUSTERNAME-tmphostfile)
@@ -232,6 +248,31 @@ __validate_ambariserver_hostname
 
 INSTANCE_NAME=$USERNAME-$CLUSTERNAME-ambari-server
 NODENAME=$CLUSTERNAME-ambari-server.$DOMAIN_NAME
+
+matching_versions=$(docker images | grep  "hdp/ambari-server-$AMBARIVERSION" | awk -F '/| ' '{print $2}' | awk -F '-' '{print $NF}' )
+echo $matchig_versions
+if [ `echo $matching_versions | wc -w` -gt 1 ]
+then
+	echo  -e "Please choose the exact Ambari version. There are multiple matching versions:\n$matching_versions"
+	exit 1
+else
+	AMBARIVERSION=$matching_versions
+fi	
+
+if [ -z "$matching_versions" ]
+then	
+#AMBARIVERSION=$AMBARIVERSION'.0'
+#	echo -e "\nGiven Ambari version image doesn't exist... Trying Ambari version as: $AMBARIVERSION"
+#	docker images | grep -q "hdp/ambari-server-$AMBARIVERSION"
+#	if [ $? -ne '0' ]
+#	then
+		echo -e "\nPlease check the Ambari version specified & if thats correct then it is likely that we need to build a local image for this version\n\t Run \"build_image.sh\" command for the required version"
+		echo -e "\nFollowing are the currently available Ambari images..."
+		docker images | grep ambari-server | awk -F '/| ' '{print $2}'
+		echo -e "\n"
+		exit 1
+fi
+echo "Ambari version =" $AMBARIVERSION
 IMAGE=hdp/ambari-server-$AMBARIVERSION
 
 
@@ -283,15 +324,16 @@ echo -e "\nAmbari Server IP is: $AMBARI_SERVER_IP"
 
 echo -e "\n\tChecking if $AMBARI_SERVER_IP:8080 is reachable\n"
 __check_ambari_server_portstatus
-
+echo -e "\b  ...[OK]"
 echo -e "\n\tChecking if Ambari-Agents have started\n"
 __check_ambari_agent_status
-
+echo -e "\b  ...[OK]"
 
 rm -f $USERNAME-$CLUSTERNAME-tmphostfile
 
 CLUSTER_LIFETIME_FILE=/opt/docker_cluster/cluster_lease
 __set_lifetime
 
+__populate_clusterversion_file
 sleep 20
 generate_json.sh $CLUSTER_PROPERTIES $AMBARI_SERVER_IP
