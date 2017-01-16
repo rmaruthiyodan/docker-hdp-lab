@@ -5,6 +5,7 @@
 - Input  : Capture AMS metadata, using the following AMS API and redirect to a file, for example 'ams_meta.out',:
 curl http://<AMS-Collector-Host>:6188/ws/v1/timeline/metrics/metadata > ams_meta.out
 - Usage  :  # ams_metrics_type_count.sh ams_meta.out
+
 Sample Output :  
 
     $ ./ams_metrics_type_count.sh ams_metrics_metadata.out 
