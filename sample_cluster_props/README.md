@@ -1,4 +1,5 @@
 - Sample Output :  
+    
 
     $ ./ams_metrics_type_count.sh ams_metrics_metadata.out 
     Input File: ams_metrics_metadata.out  
