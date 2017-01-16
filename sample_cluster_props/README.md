@@ -1,6 +1,6 @@
 ## Ambari Metric Server Tools
 
-#### Count the metric types received by AMS (ams_metrics_type_count.sh)
+#### 1) Count the metric types received by AMS (ams_metrics_type_count.sh)
 - Purpose: The script accepts AMS metrics metadata as input, in json format and produces an output that tells us the count of different types of metrics that are received from various HDP components. Ref: https://hortonworks.jira.com/browse/BUG-71434
 - Input  : Capture AMS metadata, using the following AMS API and redirect to a file, for example 'ams_meta.out',:
 curl http://<AMS-Collector-Host>:6188/ws/v1/timeline/metrics/metadata > ams_meta.out
@@ -27,4 +27,4 @@ Sample Output :
     nimbus : 7 
     timeline_metric_store_watcher : 1  
 
-
+- Note : This output tells us the number of different tpes of metrics that are received from various components. In this case, HiveMetastore was sending 682278 types of metrics at every interval and the AMS performance issue was resolved by removing hive table level metrics.
