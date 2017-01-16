@@ -18,5 +18,10 @@
     jobhistoryserver : 60 
     accumulo : 23 
     nimbus : 7 
-    timeline_metric_store_watcher : 1 
+    timeline_metric_store_watcher : 1  
+
+	yum install -y git  
+
+
+    
   
