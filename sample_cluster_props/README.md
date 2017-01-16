@@ -4,8 +4,8 @@
 - Purpose: While working on AMS performance issues, one of the required information to be collected is the count of types of metrics received from various components during every iteration.  
 The script accepts AMS metrics metadata as input, in json format and produces an output that tells us the count of different types of metrics that are received from various HDP components. Ref: https://hortonworks.jira.com/browse/BUG-71434
 
-- Input  : Capture AMS metadata, using the following AMS API and redirect to a file, for example 'ams_meta.out',:
-curl http://<AMS-Collector-Host>:6188/ws/v1/timeline/metrics/metadata > ams_meta.out
+- Input  : Capture AMS metadata, using the following AMS API and redirect to a file:  
+    # curl http://<AMS-Collector-Host>:6188/ws/v1/timeline/metrics/metadata > ams_meta.out
 
 - Usage  :  # ams_metrics_type_count.sh ams_meta.out
 
