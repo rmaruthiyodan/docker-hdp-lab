@@ -1,5 +1,4 @@
 Sample Output :  
-    
 
     $ ./ams_metrics_type_count.sh ams_metrics_metadata.out 
     Input File: ams_metrics_metadata.out  
@@ -20,7 +19,7 @@ Sample Output :
     nimbus : 7 
     timeline_metric_store_watcher : 1  
 
-	yum install -y git  
+
 
 
     
