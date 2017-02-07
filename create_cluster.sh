@@ -44,7 +44,7 @@ __validate_ambariserver_hostname()
 {
 	IP=$(getent hosts $CLUSTERNAME-ambari-server.$DOMAIN_NAME)
         if [  $? -eq 0 ]; then
-                echo -e "\t $(tput setaf 1) An instance already exists in this cluster, with the name: '" $CLUSTERNAME-ambari-server.$DOMAIN_NAME "' Please use unique hostnames...$(tput sgr 0)"
+                echo -e "\t $(tput setaf 1) The hostname: '" $CLUSTERNAME-ambari-server.$DOMAIN_NAME "' is already resolvable. Please use a different hostname or Domain...$(tput sgr 0)"
                 exit
         fi
 
@@ -70,7 +70,7 @@ do
         NODENAME=$NODENAME.$DOMAIN_NAME
 	IP=$(getent hosts $NODENAME)
 	if [  $? -eq 0 ]; then
-		echo -e "\t $(tput setaf 1) An instance already exists in this cluster, with the name: '" $NODENAME "' Please use unique hostnames...$(tput sgr 0)"
+		echo -e "\t $(tput setaf 1) The hostname: '" $NODENAME "' is already resolvable. Please use a different hostname or Domain...$(tput sgr 0)"
 		exit
 	else
 		echo $NODENAME | egrep -q '[^.0-9a-z-]'
@@ -112,6 +112,8 @@ __update_arp_table() {
   		do
 			docker -H $SWARM_MANAGER:4000 exec $INSTANCE_NAME $entry 2> /dev/null
   		done < $USERNAME-$CLUSTERNAME-tmparptable
+## Performing a ping from each node to Overlay Network GW to address a node reachability issue that is intermittently seen
+                docker -H $SWARM_MANAGER:4000 exec $INSTANCE_NAME ping -qc 1 $OVERLAY_GATEWAY_IP > /dev/null 2>&1
   	done
 }
 
@@ -309,6 +311,7 @@ done
 set -e
 # capture the MAC address of overlay gateway too
 IPADDR=`docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' overlay-gatewaynode`
+OVERLAY_GATEWAY_IP=$IPADDR
 MACADDR=`docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.MacAddress}}{{end}}' overlay-gatewaynode`
 echo "arp -s $IPADDR $MACADDR" >> $USERNAME-$CLUSTERNAME-tmparptable
 set +e

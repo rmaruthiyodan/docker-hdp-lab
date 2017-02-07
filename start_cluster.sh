@@ -86,6 +86,9 @@ __update_arp_table() {
   		do
 			docker -H $SWARM_MANAGER:4000 exec $INSTANCE_NAME $entry 2> /dev/null
   		done < /tmp/$USERNAME-$CLUSTER_NAME-tmparptable
+
+## Performing a ping from each node to Overlay Network GW to address a node reachability issue that is intermittently seen
+		docker -H $SWARM_MANAGER:4000 exec $INSTANCE_NAME ping -qc 1 $OVERLAY_GATEWAY_IP > /dev/null 2>&1
   	done
 
 	# Also updating ARP entry on gateway node
@@ -113,7 +116,10 @@ __check_ambari_server_portstatus()
                 echo "Ambari-Server is still initializing. Sleeping for 10s..."
                 sleep 10
                 loop=$(( $loop + 1 ))
-                if [ $loop -eq 10 ]
+		if [ $loop -eq 60 ]
+		then
+			ssh root@$AMBARI_SERVER_IP service ambari-server restart
+                elif [ $loop -eq 10 ]
                 then
                         echo -e "\nThere may be some error with the Ambari-Server connection or service startup... Not attempting to start services!"
 			echo -e "Run the following command Or Use Ambari WebUI to start the services: \n #curl -u admin:admin -i -H 'X-Requested-By: ambari' -X PUT -d '{\"RequestInfo\": {\"context\" :\"Start All Services\"}, \"Body\": {\"ServiceInfo\": {\"state\": \"STARTED\"}}}' http://$AMBARI_SERVER_IP:8080/api/v1/clusters/$CLUSTER_NAME/services"
@@ -140,8 +146,19 @@ __start_services()
                         HB_lost_nodecount=1
                 fi
                 loop_count=$(($loop_count+1))
-                if [ $loop_count -eq 10 ]
+
+                if [ $loop_count -eq 5 ]
                 then
+			echo -e "\n\tWaited for 10s and some ambari-agents are still down... :("
+			for node in `curl -u admin:admin -i -H 'X-Requested-By: ambari' -X GET http://$AMBARI_SERVER_IP:8080/api/v1/clusters/$CLUSTER_NAME/hosts 2> /dev/null | grep host_name | awk -F "\"" '{print $(NF-1)}'`
+			do
+				echo "Restarting ambari-agent on $node"
+				nodeip=$(grep $node $TEMP_HOST_FILE | awk '{print $1}')
+				ssh $nodeip service ambari-agent restart
+			done
+			sleep 5
+		elif [ $loop_count -eq 15 ]
+		then
                         echo "One Or more of Nodes have problems with ambari-agent service. Please check the Ambari-Server UI and restart ambari-agent before manually starting services in the cluster"
                         exit 1
                 fi
@@ -233,6 +250,7 @@ sleep 5
 set -e
 # capture the MAC address of overlay gateway too
 IPADDR=`docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' overlay-gatewaynode`
+OVERLAY_GATEWAY_IP=$IPADDR
 MACADDR=`docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.MacAddress}}{{end}}' overlay-gatewaynode`
 echo "arp -s $IPADDR $MACADDR" >> /tmp/$USERNAME-$CLUSTER_NAME-tmparptable
 set +e

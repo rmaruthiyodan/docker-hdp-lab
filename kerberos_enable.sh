@@ -5,7 +5,7 @@
 
 __find_kerberos_clients() {
 	for i in $(docker -H $SWARM_MANAGER:4000 ps | grep "\/$USERNAME_CLUSTERNAME-" | awk -F "/" '{print $NF}')
-	do
+	do	
 		echo $i | grep -q -i ambari-server
 		if [ $? -ne 0 ]
 		then
@@ -24,11 +24,12 @@ __find_kerberos_clients() {
 }
 
 __find_ambari_server_IP() {
-    AMBARI_SERVER=$(docker -H $SWARM_MANAGER:4000 ps -a | grep -i "\/$USERNAME_CLUSTERNAME-ambari-server" | awk -F "/" '{print $NF}')
-    AMBARI_SERVER_IP=$(docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $AMBARI_SERVER)
-    HOST_NAME=$(docker -H $SWARM_MANAGER:4000 inspect --format='{{.Config.Hostname}}' $AMBARI_SERVER)
-    DOMAIN_NAME=$(docker -H $SWARM_MANAGER:4000 inspect --format='{{.Config.Domainname}}' $AMBARI_SERVER)
-    AMBARI_HOST=$HOST_NAME.$DOMAIN_NAME
+
+	AMBARI_SERVER=$(docker -H $SWARM_MANAGER:4000 ps -a | grep -i "\/$USERNAME_CLUSTERNAME-ambari-server" | awk -F "/" '{print $NF}')
+	AMBARI_SERVER_IP=$(docker -H $SWARM_MANAGER:4000 inspect --format='{{range .NetworkSettings.Networks}}{{.IPAddress}}{{end}}' $AMBARI_SERVER)
+	HOST_NAME=$(docker -H $SWARM_MANAGER:4000 inspect --format='{{.Config.Hostname}}' $AMBARI_SERVER)
+        DOMAIN_NAME=$(docker -H $SWARM_MANAGER:4000 inspect --format='{{.Config.Domainname}}' $AMBARI_SERVER)
+	AMBARI_HOST=$HOST_NAME.$DOMAIN_NAME
 
 }
 
@@ -47,9 +48,16 @@ __copy_config_and_run(){
 	ssh root@$AMBARI_SERVER_IP mv /root/$USERNAME_CLUSTERNAME-kerb.out /root/ambari.props
 	ssh root@$AMBARI_SERVER_IP chmod 777 /root/setup_kerberos.sh
 	ssh root@$AMBARI_SERVER_IP nohup /root/setup_kerberos.sh > /tmp/enable_kerberos.out 2>&1 &
+	if [ "$?" -eq 0 ]
+	then
+		echo -e "\nStarted the script to Kerberize the cluster. Monitor the outfile - \'/tmp/enable_kerberos.out\' on $AMBARI_SERVER_IP to monitor the progress\n"
+	fi
 }
 
+__enable_krb5_startup(){
+	ssh root@$AMBARI_SERVER_IP "sed -i \"\/usr\/sbin\/sshd -d -p 2222/c\service krb5kdc restart\nservice kadmin restart\n\/usr\/sbin\/sshd -d -p 2222\" /start"
 
+}
 
 # public static void main  :)
 LOC=`pwd`
@@ -64,7 +72,6 @@ source /etc/docker-hdp-lab.conf
 
 USERNAME_CLUSTERNAME=$1
 __validate_clustername
-
 
 __find_ambari_server_IP
 
@@ -85,6 +92,8 @@ echo "REALM=$REALM" >>  /tmp/$USERNAME_CLUSTERNAME-kerb.out
 echo "KERBEROS_CLIENTS=$KERBEROS_CLIENTS" >>  /tmp/$USERNAME_CLUSTERNAME-kerb.out
 
 __copy_config_and_run
+
+__enable_krb5_startup
 
 exit 0
 # end
